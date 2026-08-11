@@ -1,4 +1,4 @@
 ﻿using Test
 using BloomEvents
 
-@test true
+include("test_climatology.jl")
