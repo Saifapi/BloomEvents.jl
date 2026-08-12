@@ -17,6 +17,6 @@ include("detection.jl")
 # ---- Public API (we will fill functions later) ----
 export BloomThresholds, BloomEvent, BloomResult, BloomOptions
 export BloomCategory
-export doy365, daily_climatology_mean, climatology_at_dates
+export doy365, daily_climatology_mean, climatology_at_dates`nexport positive_anomaly_mask, anomaly_series`nexport persistence_filter
 
 end # module BloomEvents
