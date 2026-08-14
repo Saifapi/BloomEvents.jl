@@ -24,16 +24,32 @@ struct BloomThresholds
     q90::Float64
 end
 
-"""One detected bloom event (start/end are inclusive)."""
+"""
+One detected bloom event.
+
+- start_idx/end_idx refer to positions in the input time series
+- start_date/end_date are inclusive
+"""
 struct BloomEvent
+    start_idx::Int
+    end_idx::Int
     start_date::Date
     end_date::Date
+    duration::Int
+    peak_chl::Float64
+    peak_category::BloomCategory
 end
 
-"""User options controlling persistence and handling of missing data."""
+"""User options controlling persistence and event rules."""
 Base.@kwdef struct BloomOptions
+    # persistence used when forming the anomaly subset for thresholds
     min_duration::Int = 3
-    max_gap::Int = 0   # reserved for later; not used yet
+
+    # gap bridging for event detection (0 = strict consecutive days)
+    max_gap::Int = 0
+
+    # event definition: event days are those with category >= this level
+    event_min_category::BloomCategory = Likely
 end
 
 """Container for outputs from the detection pipeline."""

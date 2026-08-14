@@ -1,4 +1,4 @@
-﻿# Day-level classification (categories) + high-level workflow
+﻿# Day-level classification (categories) + high-level workflow + events
 
 """
     label_days(chl, thr::BloomThresholds) -> Vector{BloomCategory}
@@ -58,4 +58,115 @@ function fit_bloom(dates::AbstractVector{Date},
     labels = label_days(chl, thr)
 
     return BloomResult(clim365, clim_at, posmask, posmask_persist, thr, labels)
+end
+
+"""
+    event_day_mask(labels; min_category=Likely) -> BitVector
+
+Days considered part of an event are those with category >= min_category.
+"""
+function event_day_mask(labels::AbstractVector{BloomCategory};
+                        min_category::BloomCategory = Likely)
+    out = falses(length(labels))
+    minv = Int(min_category)
+    for i in eachindex(labels)
+        out[i] = Int(labels[i]) >= minv
+    end
+    return out
+end
+
+"""
+    fill_short_gaps(mask; max_gap=0) -> BitVector
+
+If max_gap > 0, fill false-runs of length <= max_gap that are between true runs.
+"""
+function fill_short_gaps(mask::AbstractVector{Bool}; max_gap::Int = 0)
+    max_gap >= 0 || throw(ArgumentError("max_gap must be >= 0"))
+    out = BitVector(mask)
+    max_gap == 0 && return out
+
+    n = length(out)
+    i = 1
+    while i <= n
+        if !out[i]
+            j = i
+            while j <= n && !out[j]
+                j += 1
+            end
+            gaplen = j - i
+            left_true  = (i > 1) && out[i-1]
+            right_true = (j <= n) && out[j]
+            if left_true && right_true && gaplen <= max_gap
+                out[i:j-1] .= true
+            end
+            i = j
+        else
+            i += 1
+        end
+    end
+    return out
+end
+
+"""
+    detect_events(dates, chl, labels; min_category=Likely, min_duration=3, max_gap=0) -> Vector{BloomEvent}
+
+Segment consecutive (optionally gap-bridged) event days into events.
+"""
+function detect_events(dates::AbstractVector{Date},
+                       chl::AbstractVector,
+                       labels::AbstractVector{BloomCategory};
+                       min_category::BloomCategory = Likely,
+                       min_duration::Int = 3,
+                       max_gap::Int = 0)
+
+    length(dates) == length(chl) == length(labels) || throw(ArgumentError("dates/chl/labels must have same length"))
+    min_duration >= 1 || throw(ArgumentError("min_duration must be >= 1"))
+
+    base = event_day_mask(labels; min_category=min_category)
+    bridged = fill_short_gaps(base; max_gap=max_gap)
+    keep = persistence_filter(bridged; min_duration=min_duration)
+
+    events = BloomEvent[]
+    n = length(keep)
+    i = 1
+    while i <= n
+        if keep[i]
+            j = i
+            while j <= n && keep[j]
+                j += 1
+            end
+            s = i
+            e = j - 1
+
+            # peak chl (ignore missing)
+            peak = -Inf
+            peakcat = NoBloom
+            for k in s:e
+                if !ismissing(chl[k])
+                    v = Float64(chl[k])
+                    if v > peak
+                        peak = v
+                    end
+                end
+                if Int(labels[k]) > Int(peakcat)
+                    peakcat = labels[k]
+                end
+            end
+            peak = isfinite(peak) ? peak : NaN
+
+            push!(events, BloomEvent(
+                s, e,
+                dates[s], dates[e],
+                e - s + 1,
+                peak,
+                peakcat
+            ))
+
+            i = j
+        else
+            i += 1
+        end
+    end
+
+    return events
 end
