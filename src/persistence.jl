@@ -1,12 +1,12 @@
 ﻿# Persistence filtering for boolean masks
 
-\"\"\"
+"""
     persistence_filter(mask; min_duration=3) -> BitVector
 
-Keep only runs of 	rue in mask that have length >= min_duration.
-\"\"\"
+Keep only runs of `true` in mask that have length >= min_duration.
+"""
 function persistence_filter(mask::AbstractVector{Bool}; min_duration::Int=3)
-    min_duration >= 1 || throw(ArgumentError(\"min_duration must be >= 1\"))
+    min_duration >= 1 || throw(ArgumentError("min_duration must be >= 1"))
     out = falses(length(mask))
     n = length(mask)
     i = 1

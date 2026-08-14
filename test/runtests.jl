@@ -3,3 +3,5 @@ using BloomEvents
 
 include("test_climatology.jl")
 include("test_anomalies_persistence.jl")
+include("test_thresholds_categories.jl")
+include("test_pipeline.jl")
