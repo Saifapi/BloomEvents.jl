@@ -83,3 +83,18 @@ struct BloomEventMetrics
     rate_onset::Float64     # intensity/day
     rate_decline::Float64   # intensity/day
 end
+
+"""Per-year summary statistics derived from events and event metrics."""
+struct AnnualBloomSummary
+    year::Int
+    frequency::Int
+    total_days::Int
+    mean_duration::Float64
+
+    mean_intensity::Float64
+    max_intensity::Float64
+    cumulative_intensity::Float64
+
+    mean_rate_onset::Float64
+    mean_rate_decline::Float64
+end

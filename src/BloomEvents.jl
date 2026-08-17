@@ -11,10 +11,12 @@ include("persistence.jl")
 include("thresholds.jl")
 include("detection.jl")
 include("metrics.jl")
+include("annual.jl")
 
 export BloomThresholds, BloomEvent, BloomResult, BloomAnalysis, BloomOptions
 export BloomCategory
 export BloomEventMetrics
+export AnnualBloomSummary
 
 export doy365, daily_climatology_mean, climatology_at_dates
 export positive_anomaly_mask, anomaly_series
@@ -25,5 +27,6 @@ export event_day_mask, fill_short_gaps, detect_events
 export analyze_bloom
 
 export event_intensity, compute_event_metrics
+export annual_summaries, annual_table
 
 end # module BloomEvents
