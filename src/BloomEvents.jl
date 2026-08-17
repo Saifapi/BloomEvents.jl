@@ -12,6 +12,7 @@ include("thresholds.jl")
 include("detection.jl")
 include("metrics.jl")
 include("annual.jl")
+include("export.jl")
 
 export BloomThresholds, BloomEvent, BloomResult, BloomAnalysis, BloomOptions
 export BloomCategory
@@ -28,5 +29,7 @@ export analyze_bloom
 
 export event_intensity, compute_event_metrics
 export annual_summaries, annual_table
+
+export write_events_csv, write_annual_csv
 
 end # module BloomEvents
