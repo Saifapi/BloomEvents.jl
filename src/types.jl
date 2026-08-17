@@ -61,3 +61,25 @@ struct BloomResult
     thresholds::BloomThresholds
     labels::Vector{BloomCategory}
 end
+
+"""High-level output: day-level result + event list + options used."""
+struct BloomAnalysis
+    result::BloomResult
+    events::Vector{BloomEvent}
+    options::BloomOptions
+end
+
+"""Event-level metrics computed from chl and climatology (intensity = chl - clim)."""
+struct BloomEventMetrics
+    start_idx::Int
+    end_idx::Int
+    duration::Int
+    peak_idx::Int
+
+    mean_intensity::Float64
+    max_intensity::Float64
+    cumulative_intensity::Float64
+
+    rate_onset::Float64     # intensity/day
+    rate_decline::Float64   # intensity/day
+end

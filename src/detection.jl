@@ -170,3 +170,25 @@ function detect_events(dates::AbstractVector{Date},
 
     return events
 end
+
+"""
+    analyze_bloom(dates, chl; options=BloomOptions()) -> BloomAnalysis
+
+Convenience function that runs the full workflow:
+- thresholds + labels (fit_bloom)
+- event segmentation (detect_events)
+"""
+function analyze_bloom(dates::AbstractVector{Date},
+                       chl::AbstractVector;
+                       options::BloomOptions = BloomOptions())
+
+    res = fit_bloom(dates, chl; min_duration=options.min_duration)
+
+    ev = detect_events(dates, chl, res.labels;
+        min_category = options.event_min_category,
+        min_duration = options.min_duration,
+        max_gap      = options.max_gap
+    )
+
+    return BloomAnalysis(res, ev, options)
+end
