@@ -50,6 +50,8 @@ Base.@kwdef struct BloomOptions
 
     # event definition: event days are those with category >= this level
     event_min_category::BloomCategory = Likely
+
+    baseline_years::Union{Nothing,UnitRange{Int}} = nothing
 end
 
 """Container for outputs from the detection pipeline."""

@@ -46,9 +46,10 @@ Raulo et al.-style workflow:
 """
 function fit_bloom(dates::AbstractVector{Date},
                    chl::AbstractVector;
-                   min_duration::Int = 3)
+                   min_duration::Int = 3,
+                   baseline_years::Union{Nothing,UnitRange{Int}} = nothing)
 
-    clim365 = daily_climatology_mean(dates, chl)
+    clim365 = daily_climatology_mean(dates, chl; baseline_years=baseline_years)
     clim_at = climatology_at_dates(dates, clim365)
 
     posmask = positive_anomaly_mask(chl, clim_at)
@@ -182,7 +183,7 @@ function analyze_bloom(dates::AbstractVector{Date},
                        chl::AbstractVector;
                        options::BloomOptions = BloomOptions())
 
-    res = fit_bloom(dates, chl; min_duration=options.min_duration)
+    res = fit_bloom(dates, chl; min_duration=options.min_duration, baseline_years = options.baseline_years)
 
     ev = detect_events(dates, chl, res.labels;
         min_category = options.event_min_category,

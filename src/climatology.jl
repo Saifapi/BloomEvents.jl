@@ -27,13 +27,19 @@ ignoring missing values.
 Returns a length-365 vector with NaN for days that have no valid data.
 """
 function daily_climatology_mean(dates::AbstractVector{Date},
-                                chl::AbstractVector)::Vector{Float64}
+                                chl::AbstractVector;
+                                baseline_years::Union{Nothing,UnitRange{Int}}=nothing
+                                )::Vector{Float64}
     length(dates) == length(chl) || throw(ArgumentError("dates and chl must have same length"))
 
     bins = [Float64[] for _ in 1:365]
 
     for (d, x) in zip(dates, chl)
         ismissing(x) && continue
+        # ADD THIS:
+        if baseline_years !== nothing && !(year(d) in baseline_years)
+            continue
+        end
         idx = doy365(d)
         push!(bins[idx], Float64(x))
     end
