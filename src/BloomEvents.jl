@@ -13,11 +13,16 @@ include("detection.jl")
 include("metrics.jl")
 include("annual.jl")
 include("export.jl")
+include("spatial.jl")
+
+# plotting API stubs (real methods come from CairoMakie extension)
+include("plotting_api.jl")
 
 export BloomThresholds, BloomEvent, BloomResult, BloomAnalysis, BloomOptions
 export BloomCategory
 export BloomEventMetrics
 export AnnualBloomSummary
+export GridOptions
 
 export doy365, daily_climatology_mean, climatology_at_dates
 export positive_anomaly_mask, anomaly_series
@@ -31,5 +36,10 @@ export event_intensity, compute_event_metrics
 export annual_summaries, annual_table
 
 export write_events_csv, write_annual_csv
+
+export annual_metric_maps
+
+# plotting (works when CairoMakie is loaded; otherwise throws helpful error)
+export plot_bloom_timeseries, plot_annual_panels
 
 end # module BloomEvents
