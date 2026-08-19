@@ -14,6 +14,7 @@ include("metrics.jl")
 include("annual.jl")
 include("export.jl")
 include("spatial.jl")
+include("spatial_stack.jl")
 
 # plotting API stubs (real methods come from CairoMakie extension)
 include("plotting_api.jl")
@@ -38,6 +39,7 @@ export annual_summaries, annual_table
 export write_events_csv, write_annual_csv
 
 export annual_metric_maps
+export annual_metric_stack
 
 # plotting (works when CairoMakie is loaded; otherwise throws helpful error)
 export plot_bloom_timeseries, plot_annual_panels
