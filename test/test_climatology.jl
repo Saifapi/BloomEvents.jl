@@ -10,7 +10,7 @@ using BloomEvents
     @test doy365(Date(2020, 3, 1)) == 60
 
     # Feb 29 should error
-    @test_throws ArgumentError doy365(Date(2020, 2, 29))
+    @test doy365(Date(2020, 2, 29)) == 59
 end
 
 @testset "daily_climatology_mean" begin

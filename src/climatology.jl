@@ -9,7 +9,7 @@ Map a Date to a 1..365 day-of-year index by ignoring Feb 29.
 """
 function doy365(d::Date)::Int
     if month(d) == 2 && day(d) == 29
-        throw(ArgumentError("Feb 29 is not supported in 365-day climatology"))
+        return 59  # map leap day to Feb-28 index in 365-day climatology
     end
     doy = dayofyear(d)
     if isleapyear(year(d)) && d > Date(year(d), 2, 28)
