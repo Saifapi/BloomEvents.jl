@@ -15,8 +15,8 @@ include("annual.jl")
 include("export.jl")
 include("spatial.jl")
 include("spatial_stack.jl")
-
-# plotting API stubs (real methods come from CairoMakie extension)
+include("spatial_trends.jl")
+include("io_api.jl")
 include("plotting_api.jl")
 
 export BloomThresholds, BloomEvent, BloomResult, BloomAnalysis, BloomOptions
@@ -41,7 +41,10 @@ export write_events_csv, write_annual_csv
 export annual_metric_maps
 export annual_metric_stack
 
-# plotting (works when CairoMakie is loaded; otherwise throws helpful error)
+export nanmean, mean_over_years, linear_trend_map
+
 export plot_bloom_timeseries, plot_annual_panels
+
+export load_chl_cube_netcdf
 
 end # module BloomEvents
