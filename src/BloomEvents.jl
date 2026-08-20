@@ -46,5 +46,6 @@ export nanmean, mean_over_years, linear_trend_map
 export plot_bloom_timeseries, plot_annual_panels
 
 export load_chl_cube_netcdf, write_metric_stack_netcdf
+export plot_spatial_panels_year, plot_spatial_panels_mean, plot_spatial_panels_trend
 
 end # module BloomEvents

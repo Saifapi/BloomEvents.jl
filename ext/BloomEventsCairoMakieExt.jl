@@ -99,3 +99,152 @@ function BloomEvents.plot_annual_panels(summaries::AbstractVector{BloomEvents.An
 end
 
 end # module
+
+# -------------------------
+# Spatial panel plots (lon/lat heatmaps)
+# -------------------------
+
+function _metric_map_from_stacks(stacks, metric::Symbol, year_index::Int)
+    A = getproperty(stacks, metric)           # (year, lat, lon)
+    return @view A[year_index, :, :]          # (lat, lon)
+end
+
+function _panel_heatmap!(fig, pos, lon, lat, Z; title="", units="", colormap=:thermal)
+    ax = Axis(fig[pos...], title=title, xlabel="Longitude", ylabel="Latitude")
+    hm = heatmap!(ax, lon, lat, Z; colormap=colormap)
+    Colorbar(fig[pos[1], pos[2]+1], hm, label=units)
+    return ax
+end
+
+"""
+    plot_spatial_panels_year(lat, lon, stacks; year=YYYY)
+
+Plot 8 spatial metrics for a chosen year from stacks (year×lat×lon).
+"""
+function BloomEvents.plot_spatial_panels_year(lat::AbstractVector,
+                                              lon::AbstractVector,
+                                              stacks;
+                                              year::Int,
+                                              title::AbstractString="Annual bloom metrics")
+
+    yi = findfirst(==(year), stacks.years)
+    yi === nothing && throw(ArgumentError("year $year not found in stacks.years"))
+
+    metrics = (
+        (:frequency,            "Frequency",            "events",        :viridis),
+        (:total_days,           "Total Days",           "days",          :viridis),
+        (:mean_duration,        "Mean Duration",        "days",          :viridis),
+        (:mean_intensity,       "Mean Intensity",       "mg m⁻³",        :thermal),
+        (:max_intensity,        "Max Intensity",        "mg m⁻³",        :thermal),
+        (:cumulative_intensity, "Cumulative Intensity", "mg m⁻³·days",   :thermal),
+        (:mean_rate_onset,      "Rate of Onset",        "intensity/day", :balance),
+        (:mean_rate_decline,    "Rate of Decline",      "intensity/day", :balance),
+    )
+
+    fig = Figure(size=(1400, 900))
+    fig[0, :] = Label(fig, "$title ($year)", fontsize=18)
+
+    # 4 rows × (2 plot columns + 2 colorbar columns)
+    r = 1
+    for k in 1:2:length(metrics)
+        (m1, t1, u1, c1) = metrics[k]
+        (m2, t2, u2, c2) = metrics[k+1]
+
+        Z1 = _metric_map_from_stacks(stacks, m1, yi)
+        Z2 = _metric_map_from_stacks(stacks, m2, yi)
+
+        _panel_heatmap!(fig, (r,1), lon, lat, Z1; title=t1, units=u1, colormap=c1)
+        _panel_heatmap!(fig, (r,3), lon, lat, Z2; title=t2, units=u2, colormap=c2)
+
+        r += 1
+    end
+
+    return fig
+end
+
+"""
+    plot_spatial_panels_mean(lat, lon, stacks)
+
+Mean across years (ignoring NaNs) for each metric.
+Uses BloomEvents.mean_over_years(stack).
+"""
+function BloomEvents.plot_spatial_panels_mean(lat::AbstractVector,
+                                              lon::AbstractVector,
+                                              stacks;
+                                              title::AbstractString="Mean bloom metrics")
+
+    metrics = (
+        (:frequency,            "Mean Frequency",            "events",        :viridis),
+        (:total_days,           "Mean Total Days",           "days",          :viridis),
+        (:mean_duration,        "Mean Duration",             "days",          :viridis),
+        (:mean_intensity,       "Mean Intensity",            "mg m⁻³",        :thermal),
+        (:max_intensity,        "Mean Max Intensity",        "mg m⁻³",        :thermal),
+        (:cumulative_intensity, "Mean Cumulative Intensity", "mg m⁻³·days",   :thermal),
+        (:mean_rate_onset,      "Mean Rate of Onset",        "intensity/day", :balance),
+        (:mean_rate_decline,    "Mean Rate of Decline",      "intensity/day", :balance),
+    )
+
+    fig = Figure(size=(1400, 900))
+    fig[0, :] = Label(fig, title, fontsize=18)
+
+    r = 1
+    for k in 1:2:length(metrics)
+        (m1, t1, u1, c1) = metrics[k]
+        (m2, t2, u2, c2) = metrics[k+1]
+
+        Z1 = BloomEvents.mean_over_years(getproperty(stacks, m1))
+        Z2 = BloomEvents.mean_over_years(getproperty(stacks, m2))
+
+        _panel_heatmap!(fig, (r,1), lon, lat, Z1; title=t1, units=u1, colormap=c1)
+        _panel_heatmap!(fig, (r,3), lon, lat, Z2; title=t2, units=u2, colormap=c2)
+
+        r += 1
+    end
+
+    return fig
+end
+
+"""
+    plot_spatial_panels_trend(lat, lon, stacks; min_points=10, per_decade=true)
+
+Linear trend per pixel for each metric using BloomEvents.linear_trend_map.
+"""
+function BloomEvents.plot_spatial_panels_trend(lat::AbstractVector,
+                                               lon::AbstractVector,
+                                               stacks;
+                                               min_points::Int=10,
+                                               per_decade::Bool=true,
+                                               title::AbstractString="Trend (linear slope)")
+
+    yrs = stacks.years
+
+    metrics = (
+        (:frequency,            "Frequency Trend",            "events/decade", :balance),
+        (:total_days,           "Total Days Trend",           "days/decade",   :balance),
+        (:mean_duration,        "Mean Duration Trend",        "days/decade",   :balance),
+        (:mean_intensity,       "Mean Intensity Trend",       "mg m⁻³/decade", :balance),
+        (:max_intensity,        "Max Intensity Trend",        "mg m⁻³/decade", :balance),
+        (:cumulative_intensity, "Cumulative Intensity Trend", "mg m⁻³·days/decade", :balance),
+        (:mean_rate_onset,      "Rate of Onset Trend",        "(int/day)/decade", :balance),
+        (:mean_rate_decline,    "Rate of Decline Trend",      "(int/day)/decade", :balance),
+    )
+
+    fig = Figure(size=(1400, 900))
+    fig[0, :] = Label(fig, title, fontsize=18)
+
+    r = 1
+    for k in 1:2:length(metrics)
+        (m1, t1, u1, c1) = metrics[k]
+        (m2, t2, u2, c2) = metrics[k+1]
+
+        Z1 = BloomEvents.linear_trend_map(getproperty(stacks, m1), yrs; min_points=min_points, per_decade=per_decade)
+        Z2 = BloomEvents.linear_trend_map(getproperty(stacks, m2), yrs; min_points=min_points, per_decade=per_decade)
+
+        _panel_heatmap!(fig, (r,1), lon, lat, Z1; title=t1, units=u1, colormap=c1)
+        _panel_heatmap!(fig, (r,3), lon, lat, Z2; title=t2, units=u2, colormap=c2)
+
+        r += 1
+    end
+
+    return fig
+end
