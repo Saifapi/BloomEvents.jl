@@ -4,47 +4,63 @@ using BloomEvents
 using NCDatasets
 using Dates
 
-# -------------------------
-# Loader: single cube file
-# -------------------------
 function BloomEvents.load_chl_cube_netcdf(filepaths::AbstractVector{<:AbstractString};
                                          varname::AbstractString = "CHL",
                                          timename::AbstractString = "time",
                                          latname::AbstractString = "latitude",
-                                         lonname::AbstractString = "longitude")
+                                         lonname::AbstractString = "longitude",
+                                         start_date::Union{Nothing,Date} = nothing,
+                                         end_date::Union{Nothing,Date} = nothing)
 
     paths = collect(filepaths)
     isempty(paths) && throw(ArgumentError("filepaths is empty"))
-
     length(paths) == 1 || throw(ArgumentError("Multiple-file loading not implemented; provide a single cube NetCDF file."))
 
     ds = NCDataset(paths[1])
 
+    # Read full time vector (small) then subset indices
     timev = ds[timename][:]
-    dates = Date.(timev)
+    dates_full = Date.(timev)
+
+    tidx = collect(eachindex(dates_full))
+    if start_date !== nothing
+        tidx = filter(i -> dates_full[i] >= start_date, tidx)
+    end
+    if end_date !== nothing
+        tidx = filter(i -> dates_full[i] <= end_date, tidx)
+    end
+    isempty(tidx) && throw(ArgumentError("No time points remain after subsetting"))
+
+    dates = dates_full[tidx]
 
     lat = vec(ds[latname][:])
     lon = vec(ds[lonname][:])
 
     var = ds[varname]
-    A = var[:, :, :]                  # keep 3D (lon, lat, time) in your file
 
-    close(ds)
-
-    sz = size(A)
-    nt = length(dates)
+    # Infer dimension order from FULL variable shape (before subsetting)
+    szfull = size(var)
+    ntfull = length(dates_full)
     nlat = length(lat)
     nlon = length(lon)
 
-    it = findfirst(==(nt), sz)
-    iy = findfirst(==(nlat), sz)
-    ix = findfirst(==(nlon), sz)
+    it = findfirst(==(ntfull), szfull)
+    iy = findfirst(==(nlat), szfull)
+    ix = findfirst(==(nlon), szfull)
     (it === nothing || iy === nothing || ix === nothing) &&
-        throw(ArgumentError("Cannot infer dimension order for $varname with size $sz"))
+        throw(ArgumentError("Cannot infer dimension order for $varname with size $szfull"))
 
-    # permute to (time, lat, lon)
-    Ap = permutedims(A, (it, iy, ix))
+    # Read only selected time indices (still in file order)
+    # This yields a 3D array with same dim order as var, but time length = length(tidx)
+    inds = ntuple(d -> d == it ? tidx : Colon(), 3)
+    A = var[inds...]   # keeps 3D shape (e.g., lon × lat × time_subset)
 
+    close(ds)
+
+    # Permute to (time, lat, lon) for core pipeline
+    Ap = permutedims(A, (it, iy, ix))  # -> (time_subset, lat, lon)
+
+    nt = length(dates)
     chl3d = Array{Union{Missing,Float64}}(undef, nt, nlat, nlon)
 
     for t in 1:nt, j in 1:nlat, i in 1:nlon
@@ -64,9 +80,7 @@ function BloomEvents.load_chl_cube_netcdf(filepaths::AbstractVector{<:AbstractSt
     return dates, chl3d, lat, lon
 end
 
-# -------------------------
-# Writer helpers (MODULE SCOPE)
-# -------------------------
+# ---- NetCDF stack writer (unchanged) ----
 function _write_metric!(ds::NCDataset,
                         name::String,
                         data::AbstractArray{<:Real,3},
@@ -80,9 +94,6 @@ function _write_metric!(ds::NCDataset,
     return nothing
 end
 
-# -------------------------
-# Writer: stacks -> NetCDF
-# -------------------------
 function BloomEvents.write_metric_stack_netcdf(path::AbstractString,
                                               lat::AbstractVector,
                                               lon::AbstractVector,

@@ -20,7 +20,11 @@ grid_opts  = GridOptions(min_valid_fraction=0.3, threads=false)
 println("Found $(length(files)) NetCDF files")
 
 # ---- LOAD CUBE ----
-dates, chl3d, lat, lon = load_chl_cube_netcdf(files; varname=varname, latname=latname, lonname=lonname)
+dates, chl3d, lat, lon = load_chl_cube_netcdf(files;
+    varname=varname, latname=latname, lonname=lonname,
+    start_date=Date(2003,1,1),
+    end_date=Date(2023,12,31)
+)
 
 println("Loaded cube:")
 println("  time = ", length(dates), " days;  lat = ", length(lat), "; lon = ", length(lon))
