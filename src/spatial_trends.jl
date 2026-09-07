@@ -1,14 +1,18 @@
 ﻿# Spatial mean/trend utilities for stacks shaped as (year, lat, lon)
+# Supports NaN and missing.
 
 """
     nanmean(v) -> Float64
 
-Mean ignoring NaNs. Returns NaN if no valid values.
+Mean ignoring NaNs and missings. Returns NaN if no valid values.
 """
-function nanmean(v::AbstractVector{<:Real})
+function nanmean(v::AbstractVector)
     s = 0.0
     n = 0
     for x in v
+        if ismissing(x)
+            continue
+        end
         fx = Float64(x)
         if !isnan(fx)
             s += fx
@@ -21,15 +25,15 @@ end
 """
     mean_over_years(stack) -> Matrix{Float64}
 
-Compute mean across the year dimension (dim=1), ignoring NaNs.
+Compute mean across the year dimension (dim=1), ignoring NaNs and missings.
 
 Input:
-- stack: Array{Float64,3} with size (nyears, nlat, nlon)
+- stack: Array with size (nyears, nlat, nlon); element type may include Missing
 
 Output:
 - mean_map: Matrix{Float64} with size (nlat, nlon)
 """
-function mean_over_years(stack::AbstractArray{<:Real,3})
+function mean_over_years(stack::AbstractArray{T,3}) where {T}
     ny, nlat, nlon = size(stack)
     out = fill(NaN, nlat, nlon)
     for j in 1:nlat, i in 1:nlon
@@ -41,9 +45,9 @@ end
 """
     linear_trend_map(stack, years; min_points=10, per_decade=true) -> Matrix{Float64}
 
-Compute linear trend slope per pixel using least squares, ignoring NaNs.
+Compute linear trend slope per pixel using least squares, ignoring NaNs and missings.
 
-- stack: (nyears, nlat, nlon)
+- stack: (nyears, nlat, nlon), element type may include Missing
 - years: Vector{Int} of length nyears
 - min_points: minimum valid years required to compute slope
 - per_decade: if true, slope is scaled by 10
@@ -51,30 +55,32 @@ Compute linear trend slope per pixel using least squares, ignoring NaNs.
 Returns:
 - slope_map: (nlat, nlon), NaN where not computable
 """
-function linear_trend_map(stack::AbstractArray{<:Real,3},
+function linear_trend_map(stack::AbstractArray{T,3},
                           years::AbstractVector{<:Integer};
                           min_points::Int = 10,
-                          per_decade::Bool = true)
+                          per_decade::Bool = true) where {T}
 
     ny, nlat, nlon = size(stack)
     length(years) == ny || throw(ArgumentError("length(years) must match size(stack,1)"))
     min_points >= 2 || throw(ArgumentError("min_points must be >= 2"))
 
-    x = Float64.(years)
-
+    xall = Float64.(years)
     out = fill(NaN, nlat, nlon)
 
     for j in 1:nlat, i in 1:nlon
         yv = view(stack, :, j, i)
 
-        # collect valid pairs
         xs = Float64[]
         ys = Float64[]
         for k in 1:ny
-            y = Float64(yv[k])
-            if !isnan(y)
-                push!(xs, x[k])
-                push!(ys, y)
+            y = yv[k]
+            if ismissing(y)
+                continue
+            end
+            fy = Float64(y)
+            if !isnan(fy)
+                push!(xs, xall[k])
+                push!(ys, fy)
             end
         end
 
@@ -94,11 +100,9 @@ function linear_trend_map(stack::AbstractArray{<:Real,3},
             den += dx * dx
         end
 
-        if den == 0.0
-            continue
-        end
+        den == 0.0 && continue
 
-        slope = num / den   # units per year
+        slope = num / den
         out[j,i] = per_decade ? slope * 10.0 : slope
     end
 
