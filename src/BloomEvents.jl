@@ -18,6 +18,7 @@ include("spatial_stack.jl")
 include("spatial_trends.jl")
 include("io_api.jl")
 include("plotting_api.jl")
+include("spatial_categories.jl")
 
 export BloomThresholds, BloomEvent, BloomResult, BloomAnalysis, BloomOptions
 export BloomCategory
@@ -47,5 +48,7 @@ export plot_bloom_timeseries, plot_annual_panels
 
 export load_chl_cube_netcdf, write_metric_stack_netcdf
 export plot_spatial_panels_year, plot_spatial_panels_mean, plot_spatial_panels_trend
+
+export category_day_stack
 
 end # module BloomEvents
