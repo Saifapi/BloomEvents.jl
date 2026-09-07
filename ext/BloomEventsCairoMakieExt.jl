@@ -4,18 +4,31 @@ using BloomEvents
 using CairoMakie
 using Dates
 
-# Simple color map for categories
+# -------------------------
+# Helpers (module scope)
+# -------------------------
+
 _category_color(cat::BloomEvents.BloomCategory) = cat == BloomEvents.Likely  ? (0.2, 0.6, 1.0, 0.25) :
                                                  cat == BloomEvents.Bloom   ? (1.0, 0.7, 0.2, 0.25) :
                                                  cat == BloomEvents.Intense ? (1.0, 0.3, 0.2, 0.25) :
                                                  cat == BloomEvents.Extreme ? (0.6, 0.0, 0.0, 0.25) :
                                                                             (0, 0, 0, 0.0)
 
-"""
-Plot chl-a time series with climatology, thresholds, and shaded bloom events.
+# Makie expects Z sized (length(x), length(y)) when given x,y.
+# Our maps are (lat, lon), so convert to (lon, lat).
+_to_lonlat(Z_latlon) = permutedims(Z_latlon, (2,1))
 
-Note: uses x = 1:N (index axis) and formats date labels on x ticks.
-"""
+function _heatmap_latlon!(fig, pos, lon, lat, Z_latlon;
+                          title="", units="", colormap=:viridis)
+    ax = Axis(fig[pos...], title=title, xlabel="Longitude", ylabel="Latitude")
+    hm = heatmap!(ax, lon, lat, _to_lonlat(Z_latlon); colormap=colormap)
+    Colorbar(fig[pos[1], pos[2]+1], hm; label=units)
+    return ax
+end
+
+# -------------------------
+# Time series plot (index x-axis)
+# -------------------------
 function BloomEvents.plot_bloom_timeseries(dates::AbstractVector{Date},
                                            chl::AbstractVector,
                                            analysis::BloomEvents.BloomAnalysis;
@@ -34,18 +47,14 @@ function BloomEvents.plot_bloom_timeseries(dates::AbstractVector{Date},
     ax = Axis(fig[1, 1], title=title, xlabel="Date", ylabel="Chl-a")
 
     y = Float64.(coalesce.(chl, NaN))
-
-    # plot data first
     lines!(ax, x, y; color=:black, linewidth=1.2, label="chl-a")
 
     if show_climatology
         lines!(ax, x, res.clim_at_dates; color=:green, linewidth=2, label="climatology")
     end
 
-    # shade events using index ranges
     for ev in analysis.events
-        c = _category_color(ev.peak_category)
-        vspan!(ax, ev.start_idx, ev.end_idx; color=c)
+        vspan!(ax, ev.start_idx, ev.end_idx; color=_category_color(ev.peak_category))
     end
 
     if show_thresholds
@@ -54,23 +63,21 @@ function BloomEvents.plot_bloom_timeseries(dates::AbstractVector{Date},
                 linestyle=:dash)
     end
 
-    # format x ticks as dates
     stride = max(1, xtick_stride)
     tickpos = collect(1:stride:n)
     ticklab = Dates.format.(dates[tickpos], dateformat"yyyy-mm-dd")
     ax.xticks = (tickpos, ticklab)
     ax.xticklabelrotation = pi/6
-
     axislegend(ax; position=:rb)
+
     return fig
 end
 
-"""
-Plot annual summary panels (frequency, duration, intensity, total days, onset/decline).
-"""
+# -------------------------
+# Annual bar panels (1D)
+# -------------------------
 function BloomEvents.plot_annual_panels(summaries::AbstractVector{BloomEvents.AnnualBloomSummary};
                                         title::AbstractString="Annual bloom metrics")
-
     tab = BloomEvents.annual_table(summaries)
     yrs = tab.years
 
@@ -98,35 +105,19 @@ function BloomEvents.plot_annual_panels(summaries::AbstractVector{BloomEvents.An
     return fig
 end
 
-end # module
-
 # -------------------------
-# Spatial panel plots (lon/lat heatmaps)
+# Spatial metric panels from stacks (year×lat×lon)
 # -------------------------
-
-function _metric_map_from_stacks(stacks, metric::Symbol, year_index::Int)
-    A = getproperty(stacks, metric)           # (year, lat, lon)
-    return @view A[year_index, :, :]          # (lat, lon)
+function _metric_year_map(stacks, metric::Symbol, yi::Int)
+    A = getproperty(stacks, metric)         # (year, lat, lon)
+    return @view A[yi, :, :]                # (lat, lon)
 end
 
-function _panel_heatmap!(fig, pos, lon, lat, Z; title="", units="", colormap=:thermal)
-    ax = Axis(fig[pos...], title=title, xlabel="Longitude", ylabel="Latitude")
-    hm = heatmap!(ax, lon, lat, Z; colormap=colormap)
-    Colorbar(fig[pos[1], pos[2]+1], hm, label=units)
-    return ax
-end
-
-"""
-    plot_spatial_panels_year(lat, lon, stacks; year=YYYY)
-
-Plot 8 spatial metrics for a chosen year from stacks (year×lat×lon).
-"""
 function BloomEvents.plot_spatial_panels_year(lat::AbstractVector,
                                               lon::AbstractVector,
                                               stacks;
                                               year::Int,
                                               title::AbstractString="Annual bloom metrics")
-
     yi = findfirst(==(year), stacks.years)
     yi === nothing && throw(ArgumentError("year $year not found in stacks.years"))
 
@@ -144,35 +135,21 @@ function BloomEvents.plot_spatial_panels_year(lat::AbstractVector,
     fig = Figure(size=(1400, 900))
     fig[0, :] = Label(fig, "$title ($year)", fontsize=18)
 
-    # 4 rows × (2 plot columns + 2 colorbar columns)
     r = 1
     for k in 1:2:length(metrics)
-        (m1, t1, u1, c1) = metrics[k]
-        (m2, t2, u2, c2) = metrics[k+1]
-
-        Z1 = _metric_map_from_stacks(stacks, m1, yi)
-        Z2 = _metric_map_from_stacks(stacks, m2, yi)
-
-        _panel_heatmap!(fig, (r,1), lon, lat, Z1; title=t1, units=u1, colormap=c1)
-        _panel_heatmap!(fig, (r,3), lon, lat, Z2; title=t2, units=u2, colormap=c2)
-
+        (m1,t1,u1,c1) = metrics[k]
+        (m2,t2,u2,c2) = metrics[k+1]
+        _heatmap_latlon!(fig, (r,1), lon, lat, _metric_year_map(stacks, m1, yi); title=t1, units=u1, colormap=c1)
+        _heatmap_latlon!(fig, (r,3), lon, lat, _metric_year_map(stacks, m2, yi); title=t2, units=u2, colormap=c2)
         r += 1
     end
-
     return fig
 end
 
-"""
-    plot_spatial_panels_mean(lat, lon, stacks)
-
-Mean across years (ignoring NaNs) for each metric.
-Uses BloomEvents.mean_over_years(stack).
-"""
 function BloomEvents.plot_spatial_panels_mean(lat::AbstractVector,
                                               lon::AbstractVector,
                                               stacks;
                                               title::AbstractString="Mean bloom metrics")
-
     metrics = (
         (:frequency,            "Mean Frequency",            "events",        :viridis),
         (:total_days,           "Mean Total Days",           "days",          :viridis),
@@ -189,44 +166,35 @@ function BloomEvents.plot_spatial_panels_mean(lat::AbstractVector,
 
     r = 1
     for k in 1:2:length(metrics)
-        (m1, t1, u1, c1) = metrics[k]
-        (m2, t2, u2, c2) = metrics[k+1]
-
+        (m1,t1,u1,c1) = metrics[k]
+        (m2,t2,u2,c2) = metrics[k+1]
         Z1 = BloomEvents.mean_over_years(getproperty(stacks, m1))
         Z2 = BloomEvents.mean_over_years(getproperty(stacks, m2))
-
-        _panel_heatmap!(fig, (r,1), lon, lat, Z1; title=t1, units=u1, colormap=c1)
-        _panel_heatmap!(fig, (r,3), lon, lat, Z2; title=t2, units=u2, colormap=c2)
-
+        _heatmap_latlon!(fig, (r,1), lon, lat, Z1; title=t1, units=u1, colormap=c1)
+        _heatmap_latlon!(fig, (r,3), lon, lat, Z2; title=t2, units=u2, colormap=c2)
         r += 1
     end
-
     return fig
 end
 
-"""
-    plot_spatial_panels_trend(lat, lon, stacks; min_points=10, per_decade=true)
-
-Linear trend per pixel for each metric using BloomEvents.linear_trend_map.
-"""
 function BloomEvents.plot_spatial_panels_trend(lat::AbstractVector,
                                                lon::AbstractVector,
                                                stacks;
                                                min_points::Int=10,
                                                per_decade::Bool=true,
                                                title::AbstractString="Trend (linear slope)")
-
     yrs = stacks.years
+    units = per_decade ? "per decade" : "per year"
 
     metrics = (
-        (:frequency,            "Frequency Trend",            "events/decade", :balance),
-        (:total_days,           "Total Days Trend",           "days/decade",   :balance),
-        (:mean_duration,        "Mean Duration Trend",        "days/decade",   :balance),
-        (:mean_intensity,       "Mean Intensity Trend",       "mg m⁻³/decade", :balance),
-        (:max_intensity,        "Max Intensity Trend",        "mg m⁻³/decade", :balance),
-        (:cumulative_intensity, "Cumulative Intensity Trend", "mg m⁻³·days/decade", :balance),
-        (:mean_rate_onset,      "Rate of Onset Trend",        "(int/day)/decade", :balance),
-        (:mean_rate_decline,    "Rate of Decline Trend",      "(int/day)/decade", :balance),
+        (:frequency,            "Frequency Trend",            units, :balance),
+        (:total_days,           "Total Days Trend",           units, :balance),
+        (:mean_duration,        "Mean Duration Trend",        units, :balance),
+        (:mean_intensity,       "Mean Intensity Trend",       units, :balance),
+        (:max_intensity,        "Max Intensity Trend",        units, :balance),
+        (:cumulative_intensity, "Cumulative Intensity Trend", units, :balance),
+        (:mean_rate_onset,      "Rate of Onset Trend",        units, :balance),
+        (:mean_rate_decline,    "Rate of Decline Trend",      units, :balance),
     )
 
     fig = Figure(size=(1400, 900))
@@ -234,17 +202,88 @@ function BloomEvents.plot_spatial_panels_trend(lat::AbstractVector,
 
     r = 1
     for k in 1:2:length(metrics)
-        (m1, t1, u1, c1) = metrics[k]
-        (m2, t2, u2, c2) = metrics[k+1]
-
+        (m1,t1,u1,c1) = metrics[k]
+        (m2,t2,u2,c2) = metrics[k+1]
         Z1 = BloomEvents.linear_trend_map(getproperty(stacks, m1), yrs; min_points=min_points, per_decade=per_decade)
         Z2 = BloomEvents.linear_trend_map(getproperty(stacks, m2), yrs; min_points=min_points, per_decade=per_decade)
-
-        _panel_heatmap!(fig, (r,1), lon, lat, Z1; title=t1, units=u1, colormap=c1)
-        _panel_heatmap!(fig, (r,3), lon, lat, Z2; title=t2, units=u2, colormap=c2)
-
+        _heatmap_latlon!(fig, (r,1), lon, lat, Z1; title=t1, units=u1, colormap=c1)
+        _heatmap_latlon!(fig, (r,3), lon, lat, Z2; title=t2, units=u2, colormap=c2)
         r += 1
     end
+    return fig
+end
+
+# -------------------------
+# Category day-count panels (2×2)
+# cats: years + days_likely/days_bloom/days_intense/days_extreme (year×lat×lon)
+# -------------------------
+function BloomEvents.plot_category_panels_year(lat::AbstractVector,
+                                               lon::AbstractVector,
+                                               cats;
+                                               year::Int,
+                                               title::AbstractString="Category days")
+    yi = findfirst(==(year), cats.years)
+    yi === nothing && throw(ArgumentError("year $year not found in cats.years"))
+
+    ZL = @view cats.days_likely[yi, :, :]
+    ZB = @view cats.days_bloom[yi, :, :]
+    ZI = @view cats.days_intense[yi, :, :]
+    ZE = @view cats.days_extreme[yi, :, :]
+
+    fig = Figure(size=(1400, 750))
+    fig[0, :] = Label(fig, "$title ($year)", fontsize=18)
+
+    _heatmap_latlon!(fig, (1,1), lon, lat, ZL; title="Likely days", units="days")
+    _heatmap_latlon!(fig, (1,3), lon, lat, ZB; title="Bloom days", units="days")
+    _heatmap_latlon!(fig, (2,1), lon, lat, ZI; title="Intense days", units="days")
+    _heatmap_latlon!(fig, (2,3), lon, lat, ZE; title="Extreme days", units="days")
 
     return fig
 end
+
+function BloomEvents.plot_category_panels_mean(lat::AbstractVector,
+                                               lon::AbstractVector,
+                                               cats;
+                                               title::AbstractString="Mean category days")
+    ZL = BloomEvents.mean_over_years(cats.days_likely)
+    ZB = BloomEvents.mean_over_years(cats.days_bloom)
+    ZI = BloomEvents.mean_over_years(cats.days_intense)
+    ZE = BloomEvents.mean_over_years(cats.days_extreme)
+
+    fig = Figure(size=(1400, 750))
+    fig[0, :] = Label(fig, title, fontsize=18)
+
+    _heatmap_latlon!(fig, (1,1), lon, lat, ZL; title="Mean Likely days", units="days")
+    _heatmap_latlon!(fig, (1,3), lon, lat, ZB; title="Mean Bloom days", units="days")
+    _heatmap_latlon!(fig, (2,1), lon, lat, ZI; title="Mean Intense days", units="days")
+    _heatmap_latlon!(fig, (2,3), lon, lat, ZE; title="Mean Extreme days", units="days")
+
+    return fig
+end
+
+function BloomEvents.plot_category_panels_trend(lat::AbstractVector,
+                                                lon::AbstractVector,
+                                                cats;
+                                                min_points::Int=10,
+                                                per_decade::Bool=true,
+                                                title::AbstractString="Category days trend")
+    yrs = cats.years
+    units = per_decade ? "days/decade" : "days/year"
+
+    ZL = BloomEvents.linear_trend_map(cats.days_likely,  yrs; min_points=min_points, per_decade=per_decade)
+    ZB = BloomEvents.linear_trend_map(cats.days_bloom,   yrs; min_points=min_points, per_decade=per_decade)
+    ZI = BloomEvents.linear_trend_map(cats.days_intense, yrs; min_points=min_points, per_decade=per_decade)
+    ZE = BloomEvents.linear_trend_map(cats.days_extreme, yrs; min_points=min_points, per_decade=per_decade)
+
+    fig = Figure(size=(1400, 750))
+    fig[0, :] = Label(fig, title, fontsize=18)
+
+    _heatmap_latlon!(fig, (1,1), lon, lat, ZL; title="Likely trend", units=units, colormap=:balance)
+    _heatmap_latlon!(fig, (1,3), lon, lat, ZB; title="Bloom trend", units=units, colormap=:balance)
+    _heatmap_latlon!(fig, (2,1), lon, lat, ZI; title="Intense trend", units=units, colormap=:balance)
+    _heatmap_latlon!(fig, (2,3), lon, lat, ZE; title="Extreme trend", units=units, colormap=:balance)
+
+    return fig
+end
+
+end # module
