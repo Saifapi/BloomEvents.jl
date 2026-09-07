@@ -50,5 +50,7 @@ export load_chl_cube_netcdf, write_metric_stack_netcdf
 export plot_spatial_panels_year, plot_spatial_panels_mean, plot_spatial_panels_trend
 
 export category_day_stack
+export write_category_stack_netcdf
+export plot_category_panels_year, plot_category_panels_mean, plot_category_panels_trend
 
 end # module BloomEvents
