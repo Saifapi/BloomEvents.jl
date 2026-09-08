@@ -286,4 +286,83 @@ function BloomEvents.plot_category_panels_trend(lat::AbstractVector,
     return fig
 end
 
+# -------------------------
+# Peak-category event-frequency panels (2×2)
+# peaks must contain:
+# - years
+# - events_peak_likely/events_peak_bloom/events_peak_intense/events_peak_extreme (year×lat×lon)
+# -------------------------
+
+function BloomEvents.plot_peak_event_panels_year(lat::AbstractVector,
+                                                 lon::AbstractVector,
+                                                 peaks;
+                                                 year::Int,
+                                                 title::AbstractString="Peak-category event frequency")
+
+    yi = findfirst(==(year), peaks.years)
+    yi === nothing && throw(ArgumentError("year $year not found in peaks.years"))
+
+    ZL = @view peaks.events_peak_likely[yi, :, :]
+    ZB = @view peaks.events_peak_bloom[yi, :, :]
+    ZI = @view peaks.events_peak_intense[yi, :, :]
+    ZE = @view peaks.events_peak_extreme[yi, :, :]
+
+    fig = Figure(size=(1400, 750))
+    fig[0, :] = Label(fig, "$title ($year)", fontsize=18)
+
+    _heatmap_latlon!(fig, (1,1), lon, lat, ZL; title="Peak Likely events",  units="events")
+    _heatmap_latlon!(fig, (1,3), lon, lat, ZB; title="Peak Bloom events",   units="events")
+    _heatmap_latlon!(fig, (2,1), lon, lat, ZI; title="Peak Intense events", units="events")
+    _heatmap_latlon!(fig, (2,3), lon, lat, ZE; title="Peak Extreme events", units="events")
+
+    return fig
+end
+
+function BloomEvents.plot_peak_event_panels_mean(lat::AbstractVector,
+                                                 lon::AbstractVector,
+                                                 peaks;
+                                                 title::AbstractString="Mean peak-category event frequency")
+
+    ZL = BloomEvents.mean_over_years(peaks.events_peak_likely)
+    ZB = BloomEvents.mean_over_years(peaks.events_peak_bloom)
+    ZI = BloomEvents.mean_over_years(peaks.events_peak_intense)
+    ZE = BloomEvents.mean_over_years(peaks.events_peak_extreme)
+
+    fig = Figure(size=(1400, 750))
+    fig[0, :] = Label(fig, title, fontsize=18)
+
+    _heatmap_latlon!(fig, (1,1), lon, lat, ZL; title="Mean Peak Likely events",  units="events")
+    _heatmap_latlon!(fig, (1,3), lon, lat, ZB; title="Mean Peak Bloom events",   units="events")
+    _heatmap_latlon!(fig, (2,1), lon, lat, ZI; title="Mean Peak Intense events", units="events")
+    _heatmap_latlon!(fig, (2,3), lon, lat, ZE; title="Mean Peak Extreme events", units="events")
+
+    return fig
+end
+
+function BloomEvents.plot_peak_event_panels_trend(lat::AbstractVector,
+                                                  lon::AbstractVector,
+                                                  peaks;
+                                                  min_points::Int=10,
+                                                  per_decade::Bool=true,
+                                                  title::AbstractString="Peak-category event frequency trend")
+
+    yrs = peaks.years
+    units = per_decade ? "events/decade" : "events/year"
+
+    ZL = BloomEvents.linear_trend_map(peaks.events_peak_likely,  yrs; min_points=min_points, per_decade=per_decade)
+    ZB = BloomEvents.linear_trend_map(peaks.events_peak_bloom,   yrs; min_points=min_points, per_decade=per_decade)
+    ZI = BloomEvents.linear_trend_map(peaks.events_peak_intense, yrs; min_points=min_points, per_decade=per_decade)
+    ZE = BloomEvents.linear_trend_map(peaks.events_peak_extreme, yrs; min_points=min_points, per_decade=per_decade)
+
+    fig = Figure(size=(1400, 750))
+    fig[0, :] = Label(fig, title, fontsize=18)
+
+    _heatmap_latlon!(fig, (1,1), lon, lat, ZL; title="Likely trend",  units=units, colormap=:balance)
+    _heatmap_latlon!(fig, (1,3), lon, lat, ZB; title="Bloom trend",   units=units, colormap=:balance)
+    _heatmap_latlon!(fig, (2,1), lon, lat, ZI; title="Intense trend", units=units, colormap=:balance)
+    _heatmap_latlon!(fig, (2,3), lon, lat, ZE; title="Extreme trend", units=units, colormap=:balance)
+
+    return fig
+end
+
 end # module

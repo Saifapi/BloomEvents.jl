@@ -33,3 +33,16 @@ end
 function plot_category_panels_trend(args...; kwargs...)
     error("plot_category_panels_trend requires CairoMakie. Install it and run `using CairoMakie`.")
 end
+
+# --- peak-category event-frequency panels ---
+function plot_peak_event_panels_year(args...; kwargs...)
+    error("plot_peak_event_panels_year requires CairoMakie. Install it and run `using CairoMakie`.")
+end
+
+function plot_peak_event_panels_mean(args...; kwargs...)
+    error("plot_peak_event_panels_mean requires CairoMakie. Install it and run `using CairoMakie`.")
+end
+
+function plot_peak_event_panels_trend(args...; kwargs...)
+    error("plot_peak_event_panels_trend requires CairoMakie. Install it and run `using CairoMakie`.")
+end
