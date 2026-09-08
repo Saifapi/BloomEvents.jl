@@ -56,7 +56,6 @@ function BloomEvents.load_chl_cube_netcdf(filepaths::AbstractVector{<:AbstractSt
 
     var = ds[varname]
 
-    # infer dimension order from variable size (your file is lon × lat × time)
     szfull = size(var)
     ntfull = length(dates_full)
     nlat = length(lat)
@@ -68,16 +67,14 @@ function BloomEvents.load_chl_cube_netcdf(filepaths::AbstractVector{<:AbstractSt
     (it === nothing || iy === nothing || ix === nothing) &&
         throw(ArgumentError("Cannot infer dimension order for $varname with size $szfull"))
 
-    nd = ndims(var)
-    nd == 3 || throw(ArgumentError("Expected a 3D variable for $varname, got ndims=$nd"))
+    ndims(var) == 3 || throw(ArgumentError("Expected a 3D variable for $varname"))
 
     inds = ntuple(d -> d == it ? tidx : Colon(), 3)
-    A = var[inds...]                      # still in file order (e.g., lon × lat × time_subset)
+    A = var[inds...]     # e.g. lon×lat×time_subset
 
     close(ds)
 
-    # permute to time × lat × lon
-    Ap = permutedims(A, (it, iy, ix))
+    Ap = permutedims(A, (it, iy, ix))  # -> time×lat×lon
 
     nt = length(dates)
     chl3d = Array{Union{Missing,Float64}}(undef, nt, nlat, nlon)
@@ -100,7 +97,7 @@ function BloomEvents.load_chl_cube_netcdf(filepaths::AbstractVector{<:AbstractSt
 end
 
 # -------------------------
-# Writer: metric stacks -> NetCDF
+# Writer 1: metric stacks
 # -------------------------
 function BloomEvents.write_metric_stack_netcdf(path::AbstractString,
                                               lat::AbstractVector,
@@ -114,22 +111,17 @@ function BloomEvents.write_metric_stack_netcdf(path::AbstractString,
     nlon = length(lon)
 
     ds = NCDataset(path, "c")
-
     defDim(ds, "year", ny)
     defDim(ds, "latitude", nlat)
     defDim(ds, "longitude", nlon)
 
-    vyear = defVar(ds, "year", Int32, ("year",))
-    vyear.attrib["long_name"] = "Year"
-    vyear[:] = Int32.(years)
+    defVar(ds, "year", Int32, ("year",))[:] = Int32.(years)
 
     vlat = defVar(ds, "latitude", Float32, ("latitude",))
-    vlat.attrib["standard_name"] = "latitude"
     vlat.attrib["units"] = "degrees_north"
     vlat[:] = Float32.(lat)
 
     vlon = defVar(ds, "longitude", Float32, ("longitude",))
-    vlon.attrib["standard_name"] = "longitude"
     vlon.attrib["units"] = "degrees_east"
     vlon[:] = Float32.(lon)
 
@@ -144,17 +136,15 @@ function BloomEvents.write_metric_stack_netcdf(path::AbstractString,
 
     ds.attrib["Conventions"] = "CF-1.11"
     ds.attrib["title"] = "Bloom metric stacks (BloomEvents.jl)"
-    ds.attrib["history"] = "Created by BloomEvents.jl write_metric_stack_netcdf"
     for (k,v) in global_attrib
         ds.attrib[k] = v
     end
-
     close(ds)
     return path
 end
 
 # -------------------------
-# Writer: category day-count stacks -> NetCDF
+# Writer 2: category day-count stacks
 # -------------------------
 function BloomEvents.write_category_stack_netcdf(path::AbstractString,
                                                 lat::AbstractVector,
@@ -168,22 +158,17 @@ function BloomEvents.write_category_stack_netcdf(path::AbstractString,
     nlon = length(lon)
 
     ds = NCDataset(path, "c")
-
     defDim(ds, "year", ny)
     defDim(ds, "latitude", nlat)
     defDim(ds, "longitude", nlon)
 
-    vyear = defVar(ds, "year", Int32, ("year",))
-    vyear.attrib["long_name"] = "Year"
-    vyear[:] = Int32.(years)
+    defVar(ds, "year", Int32, ("year",))[:] = Int32.(years)
 
     vlat = defVar(ds, "latitude", Float32, ("latitude",))
-    vlat.attrib["standard_name"] = "latitude"
     vlat.attrib["units"] = "degrees_north"
     vlat[:] = Float32.(lat)
 
     vlon = defVar(ds, "longitude", Float32, ("longitude",))
-    vlon.attrib["standard_name"] = "longitude"
     vlon.attrib["units"] = "degrees_east"
     vlon[:] = Float32.(lon)
 
@@ -194,11 +179,53 @@ function BloomEvents.write_category_stack_netcdf(path::AbstractString,
 
     ds.attrib["Conventions"] = "CF-1.11"
     ds.attrib["title"] = "Bloom category day-count stacks (BloomEvents.jl)"
-    ds.attrib["history"] = "Created by BloomEvents.jl write_category_stack_netcdf"
     for (k,v) in global_attrib
         ds.attrib[k] = v
     end
+    close(ds)
+    return path
+end
 
+# -------------------------
+# Writer 3: peak-category event-frequency stacks (14G)
+# -------------------------
+function BloomEvents.write_peak_category_stack_netcdf(path::AbstractString,
+                                                     lat::AbstractVector,
+                                                     lon::AbstractVector,
+                                                     peaks;
+                                                     global_attrib::Dict{String,Any}=Dict{String,Any}())
+
+    years = peaks.years
+    ny = length(years)
+    nlat = length(lat)
+    nlon = length(lon)
+
+    ds = NCDataset(path, "c")
+    defDim(ds, "year", ny)
+    defDim(ds, "latitude", nlat)
+    defDim(ds, "longitude", nlon)
+
+    defVar(ds, "year", Int32, ("year",))[:] = Int32.(years)
+
+    vlat = defVar(ds, "latitude", Float32, ("latitude",))
+    vlat.attrib["units"] = "degrees_north"
+    vlat[:] = Float32.(lat)
+
+    vlon = defVar(ds, "longitude", Float32, ("longitude",))
+    vlon.attrib["units"] = "degrees_east"
+    vlon[:] = Float32.(lon)
+
+    _write_metric!(ds, "events_peak_likely",  peaks.events_peak_likely,  "events", "Events with peak category Likely")
+    _write_metric!(ds, "events_peak_bloom",   peaks.events_peak_bloom,   "events", "Events with peak category Bloom")
+    _write_metric!(ds, "events_peak_intense", peaks.events_peak_intense, "events", "Events with peak category Intense")
+    _write_metric!(ds, "events_peak_extreme", peaks.events_peak_extreme, "events", "Events with peak category Extreme")
+    _write_metric!(ds, "events_total",        peaks.events_total,        "events", "Total number of events")
+
+    ds.attrib["Conventions"] = "CF-1.11"
+    ds.attrib["title"] = "Bloom peak-category event-frequency stacks (BloomEvents.jl)"
+    for (k,v) in global_attrib
+        ds.attrib[k] = v
+    end
     close(ds)
     return path
 end
