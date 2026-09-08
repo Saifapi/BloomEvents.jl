@@ -11,3 +11,7 @@ end
 function write_category_stack_netcdf(args...; kwargs...)
     error("write_category_stack_netcdf requires NCDatasets. Install it and run `using NCDatasets`.")
 end
+
+function write_peak_category_stack_netcdf(args...; kwargs...)
+    error("write_peak_category_stack_netcdf requires NCDatasets. Install it and run `using NCDatasets`.")
+end
