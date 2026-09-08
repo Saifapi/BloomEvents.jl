@@ -58,5 +58,6 @@ export write_category_stack_netcdf
 export plot_category_panels_year, plot_category_panels_mean, plot_category_panels_trend
 export category_event_day_stack
 export event_peak_category_stack
+export write_peak_category_stack_netcdf
 
 end # module BloomEvents
