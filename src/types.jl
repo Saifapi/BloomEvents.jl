@@ -51,6 +51,9 @@ Base.@kwdef struct BloomOptions
     # event definition: event days are those with category >= this level
     event_min_category::BloomCategory = Likely
 
+    check_dates::Bool = true
+    strict_daily::Bool = false
+    
     baseline_years::Union{Nothing,UnitRange{Int}} = nothing
 end
 

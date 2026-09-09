@@ -182,6 +182,9 @@ Convenience function that runs the full workflow:
 function analyze_bloom(dates::AbstractVector{Date},
                        chl::AbstractVector;
                        options::BloomOptions = BloomOptions())
+    if options.check_dates
+        check_daily(dates; strict=options.strict_daily)
+    end
 
     res = fit_bloom(dates, chl; min_duration=options.min_duration, baseline_years = options.baseline_years)
 

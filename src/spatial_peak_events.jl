@@ -25,6 +25,9 @@ function event_peak_category_stack(dates::AbstractVector{Date},
                                    years_in;
                                    bloom_options::BloomOptions = BloomOptions(),
                                    grid_options::GridOptions = GridOptions())
+    if bloom_options.check_dates
+        check_daily(dates; strict=bloom_options.strict_daily)
+    end
 
     size(chl3d, 1) == length(dates) || throw(ArgumentError("size(chl3d,1) must equal length(dates)"))
     nt = size(chl3d, 1)

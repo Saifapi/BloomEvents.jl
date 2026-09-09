@@ -2,6 +2,7 @@
 
 Base.@kwdef struct GridOptions
     min_valid_fraction::Float64 = 0.3   # fraction of non-missing days required
+    min_valid_points::Int = 0
     threads::Bool = false               # can enable later
 end
 
@@ -21,7 +22,9 @@ function annual_metric_maps(dates::AbstractVector{Date},
                             year::Int;
                             bloom_options::BloomOptions = BloomOptions(),
                             grid_options::GridOptions = GridOptions())
-
+    if bloom_options.check_dates
+        check_daily(dates; strict=bloom_options.strict_daily)
+    end
     size(chl3d, 1) == length(dates) || throw(ArgumentError("size(chl3d,1) must equal length(dates)"))
     nt = size(chl3d, 1)
     ny = size(chl3d, 2)
@@ -55,7 +58,8 @@ function annual_metric_maps(dates::AbstractVector{Date},
         for t in 1:nt
             valid += ismissing(ts[t]) ? 0 : 1
         end
-        if valid / nt < grid_options.min_valid_fraction
+        if (grid_options.min_valid_points > 0 && valid < grid_options.min_valid_points) ||
+            (valid / nt < grid_options.min_valid_fraction)
             continue
         end
 
