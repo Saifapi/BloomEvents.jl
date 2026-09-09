@@ -17,6 +17,7 @@ include("spatial.jl")
 include("spatial_stack.jl")
 include("spatial_trends.jl")
 include("io_api.jl")
+include("qa.jl")
 include("plotting_api.jl")
 include("spatial_categories.jl")
 include("spatial_categories_events.jl")
@@ -60,5 +61,8 @@ export category_event_day_stack
 export event_peak_category_stack
 export write_peak_category_stack_netcdf
 export plot_peak_event_panels_year, plot_peak_event_panels_mean, plot_peak_event_panels_trend
+export is_sorted_dates, daily_gaps, check_daily
+export missing_fraction, valid_fraction
+export count_valid_pixels, fraction_valid_pixels
 
 end # module BloomEvents
