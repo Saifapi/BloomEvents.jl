@@ -1,4 +1,8 @@
-﻿using BloomEvents
+﻿import Pkg
+Pkg.activate(@__DIR__)
+Pkg.instantiate()
+
+using BloomEvents
 using NCDatasets
 using CairoMakie
 
