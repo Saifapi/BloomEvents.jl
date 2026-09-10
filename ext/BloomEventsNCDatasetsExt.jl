@@ -10,6 +10,22 @@ using Dates
 
 _getattrib(v, key::String, default="") = haskey(v.attrib, key) ? v.attrib[key] : default
 
+function _write_metric!(ds::NCDataset,
+                        name::String,
+                        data,
+                        units::String,
+                        long_name::String)
+    v = defVar(ds, name, Float32, ("year","latitude","longitude"))
+    v.attrib["_FillValue"] = Float32(NaN)
+    v.attrib["units"] = units
+    v.attrib["long_name"] = long_name
+
+    # handle possible Missing values safely
+    A = Array(data)
+    v[:, :, :] = Float32.(coalesce.(A, NaN))
+    return nothing
+end
+
 function _varnames(ds)
     # NCDatasets/CommonDataModel stores variables in ds.group
     try
