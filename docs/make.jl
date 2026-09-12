@@ -4,7 +4,7 @@ using BloomEvents
 makedocs(
     sitename = "BloomEvents.jl",
     modules = [BloomEvents],
-    remotes = nothing,
+
     pages = [
         "Home" => "index.md",
         "Theory" => "theory.md",
@@ -14,4 +14,4 @@ makedocs(
 )
 
 # Enable this later when you publish to GitHub Pages:
-# deploydocs(repo = "github.com/<YOUR_USERNAME>/BloomEvents.jl.git")
+deploydocs(repo = "github.com/Saifapi/BloomEvents.jl.git")
