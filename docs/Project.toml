@@ -1,3 +1,6 @@
 [deps]
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
 BloomEvents = "30d135c3-80e7-4161-98dc-7057595b7748"
+
+[sources]
+BloomEvents = {path = ".."}
