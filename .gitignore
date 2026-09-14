@@ -1,11 +1,11 @@
 ﻿Manifest.toml
 .vscode/
 .DS_Store
-*.jls
-*.nc
+
 *.jls
 *.nc
 *.png
-*.png
+*.csv
+
 # Documentation build output
 docs/build/
