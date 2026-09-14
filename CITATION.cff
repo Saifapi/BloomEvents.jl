@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use BloomEvents.jl in your research, please cite it."
+type: software
+title: "BloomEvents.jl"
+version: "0.1.0"
+date-released: "2026-09-15"
+authors:
+  - family-names: "Mehjabin"
+    given-names: "Saif"
+repository-code: "https://github.com/Saifapi/BloomEvents.jl"
+license: "MIT"
