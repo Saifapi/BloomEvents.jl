@@ -1,7 +1,7 @@
 name = "BloomEvents"
 uuid = "30d135c3-80e7-4161-98dc-7057595b7748"
 version = "0.1.0"
-authors = ["Saif Mehjabin "]
+authors = ["Saif Mehjabin"]
 
 [deps]
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
