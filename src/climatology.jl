@@ -4,7 +4,7 @@
     doy365(d::Date) -> Int
 
 Map a Date to a 1..365 day-of-year index by ignoring Feb 29.
-- Feb 29 is not valid in this mapping (throws an error).
+- Feb 29 is mapped to the Feb 28 index (59).
 - Dates after Feb 28 in leap years are shifted by -1.
 """
 function doy365(d::Date)::Int
@@ -20,11 +20,15 @@ function doy365(d::Date)::Int
 end
 
 """
-    daily_climatology_mean(dates, chl) -> Vector{Float64}
+    daily_climatology_mean(dates, chl; baseline_years=nothing) -> Vector{Float64}
 
-Compute 365-day climatological mean chlorophyll-a by day-of-year (doy365),
+Compute 365-day climatological mean chlorophyll-a by day-of-year (`doy365`),
 ignoring missing values.
-Returns a length-365 vector with NaN for days that have no valid data.
+
+If `baseline_years` is provided, only observations from those years are used
+to compute the climatology.
+
+Returns a length-365 vector with `NaN` for days that have no valid data.
 """
 function daily_climatology_mean(dates::AbstractVector{Date},
                                 chl::AbstractVector;

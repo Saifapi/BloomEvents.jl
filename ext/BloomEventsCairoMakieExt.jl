@@ -29,6 +29,30 @@ end
 # -------------------------
 # Time series plot (index x-axis)
 # -------------------------
+"""
+    plot_bloom_timeseries(dates, chl, analysis;
+                          show_climatology=true,
+                          show_thresholds=true,
+                          title="Bloom events",
+                          xtick_stride=10)
+
+Plot a chlorophyll-a time series together with detected bloom events.
+
+The plot can optionally show the daily climatology and bloom percentile
+thresholds from the supplied `analysis` result.
+
+# Arguments
+
+- `dates`: observation dates corresponding to `chl`.
+- `chl`: chlorophyll-a time series.
+- `analysis`: `BloomAnalysis` returned by `analyze_bloom`.
+- `show_climatology`: whether to display the climatological mean.
+- `show_thresholds`: whether to display the bloom percentile thresholds.
+- `title`: plot title.
+- `xtick_stride`: spacing between displayed date ticks.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_bloom_timeseries(dates::AbstractVector{Date},
                                            chl::AbstractVector,
                                            analysis::BloomEvents.BloomAnalysis;
@@ -76,6 +100,21 @@ end
 # -------------------------
 # Annual bar panels (1D)
 # -------------------------
+"""
+    plot_annual_panels(summaries; title="Annual bloom metrics")
+
+Plot annual bloom metrics from a collection of `AnnualBloomSummary` values.
+
+The resulting figure summarizes annual bloom frequency, total bloom days,
+mean duration, intensity, cumulative intensity, and onset/decline rates.
+
+# Arguments
+
+- `summaries`: annual bloom summaries returned by `annual_summaries`.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_annual_panels(summaries::AbstractVector{BloomEvents.AnnualBloomSummary};
                                         title::AbstractString="Annual bloom metrics")
     tab = BloomEvents.annual_table(summaries)
@@ -113,6 +152,25 @@ function _metric_year_map(stacks, metric::Symbol, yi::Int)
     return @view A[yi, :, :]                # (lat, lon)
 end
 
+"""
+    plot_spatial_panels_year(lat, lon, stacks; year, title="Annual bloom metrics")
+
+Plot annual spatial bloom metrics for a selected year.
+
+The figure displays the available annual metric fields for the requested
+year, including bloom frequency, duration, intensity, cumulative intensity,
+and onset/decline rates.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `stacks`: annual metric stack returned by `annual_metric_stack`.
+- `year`: year to plot.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_spatial_panels_year(lat::AbstractVector,
                                               lon::AbstractVector,
                                               stacks;
@@ -146,6 +204,23 @@ function BloomEvents.plot_spatial_panels_year(lat::AbstractVector,
     return fig
 end
 
+"""
+    plot_spatial_panels_mean(lat, lon, stacks; title="Mean bloom metrics")
+
+Plot mean spatial bloom metrics across the years in an annual metric stack.
+
+The figure displays the mean of the available annual metric fields for each
+spatial grid cell.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `stacks`: annual metric stack returned by `annual_metric_stack`.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_spatial_panels_mean(lat::AbstractVector,
                                               lon::AbstractVector,
                                               stacks;
@@ -177,6 +252,29 @@ function BloomEvents.plot_spatial_panels_mean(lat::AbstractVector,
     return fig
 end
 
+"""
+    plot_spatial_panels_trend(lat, lon, stacks;
+                              min_points=10,
+                              per_decade=true,
+                              title="Trend (linear slope)")
+
+Plot spatial trends in annual bloom metrics.
+
+The trend is computed from the annual metric stack and displayed as spatial
+maps. By default, trends are expressed per decade.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `stacks`: annual metric stack returned by `annual_metric_stack`.
+- `min_points`: minimum number of valid annual observations required to
+  compute a trend.
+- `per_decade`: whether to express trends per decade rather than per year.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_spatial_panels_trend(lat::AbstractVector,
                                                lon::AbstractVector,
                                                stacks;
@@ -217,6 +315,25 @@ end
 # Category day-count panels (2×2)
 # cats: years + days_likely/days_bloom/days_intense/days_extreme (year×lat×lon)
 # -------------------------
+
+"""
+    plot_category_panels_year(lat, lon, cats; year, title="Category days")
+
+Plot spatial bloom-category day counts for a selected year.
+
+The figure displays the number of days classified as `Likely`, `Bloom`,
+`Intense`, and `Extreme` for each spatial grid cell.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `cats`: category-day stack returned by `category_day_stack`.
+- `year`: year to plot.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_category_panels_year(lat::AbstractVector,
                                                lon::AbstractVector,
                                                cats;
@@ -241,6 +358,23 @@ function BloomEvents.plot_category_panels_year(lat::AbstractVector,
     return fig
 end
 
+"""
+    plot_category_panels_mean(lat, lon, cats; title="Mean category days")
+
+Plot mean bloom-category day counts across the years in a category-day stack.
+
+The figure displays the mean number of days classified as `Likely`, `Bloom`,
+`Intense`, and `Extreme` for each spatial grid cell.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `cats`: category-day stack returned by `category_day_stack`.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_category_panels_mean(lat::AbstractVector,
                                                lon::AbstractVector,
                                                cats;
@@ -261,6 +395,29 @@ function BloomEvents.plot_category_panels_mean(lat::AbstractVector,
     return fig
 end
 
+"""
+    plot_category_panels_trend(lat, lon, cats;
+                               min_points=10,
+                               per_decade=true,
+                               title="Category days trend")
+
+Plot spatial trends in annual bloom-category day counts.
+
+The trend is computed separately for the `Likely`, `Bloom`, `Intense`, and
+`Extreme` category-day fields.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `cats`: category-day stack returned by `category_day_stack`.
+- `min_points`: minimum number of valid annual observations required to
+  compute a trend.
+- `per_decade`: whether to express trends per decade rather than per year.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_category_panels_trend(lat::AbstractVector,
                                                 lon::AbstractVector,
                                                 cats;
@@ -293,6 +450,28 @@ end
 # - events_peak_likely/events_peak_bloom/events_peak_intense/events_peak_extreme (year×lat×lon)
 # -------------------------
 
+"""
+    plot_peak_event_panels_year(lat, lon, peaks;
+                                year,
+                                title="Peak-category event frequency")
+
+Plot spatial bloom-event counts by peak category for a selected year.
+
+The figure displays the number of detected events whose peak category is
+`Likely`, `Bloom`, `Intense`, or `Extreme`, together with total event
+frequency.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `peaks`: peak-category event stack returned by
+  `event_peak_category_stack`.
+- `year`: year to plot.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_peak_event_panels_year(lat::AbstractVector,
                                                  lon::AbstractVector,
                                                  peaks;
@@ -318,6 +497,26 @@ function BloomEvents.plot_peak_event_panels_year(lat::AbstractVector,
     return fig
 end
 
+"""
+    plot_peak_event_panels_mean(lat, lon, peaks;
+                                title="Mean peak-category event frequency")
+
+Plot mean bloom-event counts by peak category across the available years.
+
+The figure displays the mean number of detected events whose peak category is
+`Likely`, `Bloom`, `Intense`, or `Extreme`, together with mean total event
+frequency.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `peaks`: peak-category event stack returned by
+  `event_peak_category_stack`.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_peak_event_panels_mean(lat::AbstractVector,
                                                  lon::AbstractVector,
                                                  peaks;
@@ -339,6 +538,30 @@ function BloomEvents.plot_peak_event_panels_mean(lat::AbstractVector,
     return fig
 end
 
+"""
+    plot_peak_event_panels_trend(lat, lon, peaks;
+                                 min_points=10,
+                                 per_decade=true,
+                                 title="Peak-category event frequency trend")
+
+Plot spatial trends in annual bloom-event counts by peak category.
+
+The trend is computed separately for events peaking in the `Likely`, `Bloom`,
+`Intense`, and `Extreme` categories, as well as for total event frequency.
+
+# Arguments
+
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `peaks`: peak-category event stack returned by
+  `event_peak_category_stack`.
+- `min_points`: minimum number of valid annual observations required to
+  compute a trend.
+- `per_decade`: whether to express trends per decade rather than per year.
+- `title`: plot title.
+
+Returns a CairoMakie `Figure`.
+"""
 function BloomEvents.plot_peak_event_panels_trend(lat::AbstractVector,
                                                   lon::AbstractVector,
                                                   peaks;

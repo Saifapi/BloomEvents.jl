@@ -1,9 +1,23 @@
 ﻿using Documenter
 using BloomEvents
+using NCDatasets
+using CairoMakie
+
+# Load the package extension modules explicitly for Documenter.
+const BloomEventsNCDatasetsExt =
+    Base.get_extension(BloomEvents, :BloomEventsNCDatasetsExt)
+
+const BloomEventsCairoMakieExt =
+    Base.get_extension(BloomEvents, :BloomEventsCairoMakieExt)
 
 makedocs(
     sitename = "BloomEvents.jl",
-    modules = [BloomEvents],
+    modules = [
+        BloomEvents,
+        BloomEventsNCDatasetsExt,
+        BloomEventsCairoMakieExt,
+    ],
+    checkdocs = :exports,
 
     pages = [
         "Home" => "index.md",

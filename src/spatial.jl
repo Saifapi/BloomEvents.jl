@@ -1,21 +1,46 @@
 ﻿# Spatial / gridded workflows (core, no IO)
 
+"""
+    GridOptions(; min_valid_fraction=0.3, min_valid_points=0, threads=false)
+
+Options controlling gridded bloom analysis.
+
+- `min_valid_fraction`: minimum fraction of non-missing observations required
+  for a grid cell to be analyzed.
+- `min_valid_points`: minimum number of valid observations required for a
+  grid cell. A value of `0` disables this criterion.
+- `threads`: whether threaded computation may be enabled for gridded
+  processing.
+"""
 Base.@kwdef struct GridOptions
-    min_valid_fraction::Float64 = 0.3   # fraction of non-missing days required
+    min_valid_fraction::Float64 = 0.3
     min_valid_points::Int = 0
-    threads::Bool = false               # can enable later
+    threads::Bool = false
 end
 
 """
-    annual_metric_maps(dates, chl3d, year; bloom_options=BloomOptions(), grid_options=GridOptions())
+    annual_metric_maps(dates, chl3d, year;
+                       bloom_options=BloomOptions(),
+                       grid_options=GridOptions())
 
-Compute annual bloom metric maps for a single year from a chl cube shaped:
+Compute annual bloom metrics for a single year at every spatial grid cell.
+
+The input `chl3d` must have dimensions:
+
     chl3d[time, lat, lon]
 
-Returns a NamedTuple of 2D Float64 arrays (lat×lon), filled with NaN where not computable.
-Policy:
-- If pixel has insufficient valid data => all metrics NaN
-- If pixel is computable but has no events in that year => frequency=0, total_days=0, others NaN
+For each grid cell, the function applies the bloom detection workflow and
+computes annual frequency, total bloom days, mean duration, intensity,
+cumulative intensity, and onset/decline rates.
+
+Returns a `NamedTuple` containing 2D `Float64` arrays with dimensions
+`lat × lon`.
+
+Grid cells that do not meet the validity requirements remain `NaN`.
+For computable cells with no events in the requested year, `frequency`
+and `total_days` are `0`, while the remaining event metrics are `NaN`.
+
+The validity requirements are controlled by `GridOptions`.
 """
 function annual_metric_maps(dates::AbstractVector{Date},
                             chl3d::AbstractArray,

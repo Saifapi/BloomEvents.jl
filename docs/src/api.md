@@ -20,6 +20,7 @@ BloomEventMetrics
 AnnualBloomSummary
 BloomResult
 BloomAnalysis
+GridOptions
 ```
 
 ---
@@ -101,8 +102,35 @@ write_annual_csv
 
 ---
 
-## Optional NetCDF I/O
+## NetCDF I/O
 
-NetCDF input/output methods are provided through the optional `NCDatasets` dependency.
+NetCDF input/output methods are provided through the optional `NCDatasets`
+dependency.
 
-They will be documented separately when the extension documentation is configured.
+```@docs
+load_chl_cube_netcdf
+write_metric_stack_netcdf
+write_category_stack_netcdf
+write_peak_category_stack_netcdf
+```
+
+---
+
+## Plotting
+
+Plotting methods are provided through the optional `CairoMakie`
+dependency.
+
+```@docs
+plot_bloom_timeseries
+plot_annual_panels
+plot_spatial_panels_year
+plot_spatial_panels_mean
+plot_spatial_panels_trend
+plot_category_panels_year
+plot_category_panels_mean
+plot_category_panels_trend
+plot_peak_event_panels_year
+plot_peak_event_panels_mean
+plot_peak_event_panels_trend
+```

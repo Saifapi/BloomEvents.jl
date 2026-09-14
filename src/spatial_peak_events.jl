@@ -5,20 +5,31 @@
                               bloom_options=BloomOptions(),
                               grid_options=GridOptions())
 
-Counts number of detected events per year whose peak_category is:
-Likely, Bloom, Intense, Extreme.
+Count detected bloom events by their peak category for every spatial grid
+cell and requested year.
 
-Returns NamedTuple with stacks shaped (year, lat, lon):
-- years
-- events_peak_likely
-- events_peak_bloom
-- events_peak_intense
-- events_peak_extreme
-- events_total  (sum of the four)
+The input `chl3d` must have dimensions:
 
-Policy:
-- pixel not computable => NaN
-- pixel computable but no events => 0
+    chl3d[time, lat, lon]
+
+Returns a `NamedTuple` containing:
+- `years`: requested years.
+- `events_peak_likely`: number of events peaking in `Likely`.
+- `events_peak_bloom`: number of events peaking in `Bloom`.
+- `events_peak_intense`: number of events peaking in `Intense`.
+- `events_peak_extreme`: number of events peaking in `Extreme`.
+- `events_total`: total number of detected events.
+
+All event-count arrays have dimensions `year × lat × lon`.
+
+Event membership follows the rules in `BloomOptions`, including minimum
+duration, minimum event category, optional gap bridging, and
+`baseline_years` when provided.
+
+Cells that do not satisfy the validity requirements remain `NaN`.
+Computable cells with no events in a requested year contain zeros.
+
+The validity requirements are controlled by `GridOptions`.
 """
 function event_peak_category_stack(dates::AbstractVector{Date},
                                    chl3d::AbstractArray,
@@ -54,13 +65,14 @@ function event_peak_category_stack(dates::AbstractVector{Date},
         for t in 1:nt
             valid += ismissing(ts[t]) ? 0 : 1
         end
-        if valid / nt < grid_options.min_valid_fraction
+        if (grid_options.min_valid_points > 0 && valid < grid_options.min_valid_points) ||
+            (valid / nt < grid_options.min_valid_fraction)
             continue
         end
 
         # thresholds + labels
         res = try
-            fit_bloom(dates, ts; min_duration=bloom_options.min_duration)
+            fit_bloom(dates, ts; min_duration=bloom_options.min_duration, baseline_years=bloom_options.baseline_years)
         catch
             continue
         end

@@ -1,20 +1,26 @@
 ﻿# Spatial annual metric stacks (year × lat × lon)
 
 """
-    annual_metric_stack(dates, chl3d, years; bloom_options=BloomOptions(), grid_options=GridOptions())
+    annual_metric_stack(dates, chl3d, years;
+                        bloom_options=BloomOptions(),
+                        grid_options=GridOptions())
 
-Compute annual bloom metric stacks for multiple years from a chl cube shaped:
+Compute annual bloom metrics for multiple years at every spatial grid cell.
+
+The input `chl3d` must have dimensions:
+
     chl3d[time, lat, lon]
 
-Returns a NamedTuple:
-- years::Vector{Int}
-- stacks for each metric: Array{Float64,3} with size (nyears, nlat, nlon)
+Returns a `NamedTuple` containing `years` and 3D metric arrays with
+dimensions:
 
-Policy:
-- If pixel is NOT computable (insufficient valid data or threshold failure): all metrics remain NaN
-- If pixel is computable but has NO events in a given year:
-    frequency = 0, total_days = 0
-    other metrics remain NaN (mean_duration, intensities, rates)
+    year × lat × lon
+
+For computable cells with no events in a requested year, `frequency`
+and `total_days` are `0`, while the remaining event metrics are `NaN`.
+
+Cells that do not satisfy the validity requirements remain `NaN` for all
+metrics. The validity requirements are controlled by `GridOptions`.
 """
 function annual_metric_stack(dates::AbstractVector{Date},
                              chl3d::AbstractArray,
@@ -55,7 +61,8 @@ function annual_metric_stack(dates::AbstractVector{Date},
         for t in 1:nt
             valid += ismissing(ts[t]) ? 0 : 1
         end
-        if valid / nt < grid_options.min_valid_fraction
+        if (grid_options.min_valid_points > 0 && valid < grid_options.min_valid_points) ||
+            (valid / nt < grid_options.min_valid_fraction)
             continue
         end
 

@@ -237,16 +237,36 @@ end
 # ============================================================
 
 """
-    load_chl_cube_netcdf(filepaths; ...)
+    load_chl_cube_netcdf(filepaths; kwargs...) -> dates, chl3d, lat, lon
 
-Returns:
-(dates::Vector{Date}, chl3d::Array{Union{Missing,Float64},3}, lat, lon)
+Load chlorophyll-a data from one or more NetCDF files.
 
-Output chl3d is ALWAYS shaped: [time, lat, lon]
+The returned chlorophyll array has dimensions:
 
-Supports:
-- Single cube file with time dimension
-- Multiple files each containing one time slice (2D CHL), time read from the file
+    time × latitude × longitude
+
+The function supports CF-style variable and coordinate detection, optional
+date and spatial subsetting, longitude reordering, and dateline-crossing
+longitude ranges.
+
+Missing and invalid chlorophyll values are converted to `missing`.
+
+# Arguments
+
+- `filepaths`: one NetCDF file or a collection of NetCDF files.
+- `varname`: optional chlorophyll variable name.
+- `timename`: optional time variable name.
+- `latname`: optional latitude variable name.
+- `lonname`: optional longitude variable name.
+- `start_date`, `end_date`: optional date range for temporal subsetting.
+- `lat_range`: optional latitude range.
+- `lon_range`: optional longitude range.
+- `reorder_lon`: whether to reorder longitude coordinates into ascending
+  order.
+- `allow_dateline_crossing`: whether longitude ranges crossing the dateline
+  are allowed.
+
+Returns `(dates, chl3d, lat, lon)`.
 """
 function BloomEvents.load_chl_cube_netcdf(filepaths::AbstractVector{<:AbstractString};
                                          varname::Union{Nothing,String} = nothing,
@@ -444,6 +464,40 @@ end
 # Writers (unchanged): keep inside module
 # ============================================================
 
+"""
+    write_metric_stack_netcdf(path, lat, lon, stacks; global_attrib=Dict())
+
+Write annual bloom metric stacks to a CF-compliant NetCDF file.
+
+The `stacks` argument is expected to contain annual metric arrays with
+dimensions:
+
+    year × latitude × longitude
+
+The following metrics are written when available:
+
+- `frequency`
+- `total_days`
+- `mean_duration`
+- `mean_intensity`
+- `max_intensity`
+- `cumulative_intensity`
+- `mean_rate_onset`
+- `mean_rate_decline`
+
+The output file also contains `year`, `latitude`, and `longitude`
+coordinates.
+
+# Arguments
+
+- `path`: output NetCDF file path.
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `stacks`: named tuple containing annual metric arrays.
+- `global_attrib`: optional dictionary of global NetCDF attributes.
+
+The output uses CF-1.11 metadata conventions.
+"""
 function BloomEvents.write_metric_stack_netcdf(path::AbstractString,
                                               lat::AbstractVector,
                                               lon::AbstractVector,
@@ -486,6 +540,35 @@ function BloomEvents.write_metric_stack_netcdf(path::AbstractString,
     return path
 end
 
+"""
+    write_category_stack_netcdf(path, lat, lon, cats; global_attrib=Dict())
+
+Write annual bloom-category day counts to a CF-compliant NetCDF file.
+
+The `cats` argument should contain category-day arrays with dimensions:
+
+    year × latitude × longitude
+
+The following variables are written:
+
+- `days_likely`
+- `days_bloom`
+- `days_intense`
+- `days_extreme`
+
+The output file also contains `year`, `latitude`, and `longitude`
+coordinates.
+
+# Arguments
+
+- `path`: output NetCDF file path.
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `cats`: named tuple containing category-day arrays.
+- `global_attrib`: optional dictionary of global NetCDF attributes.
+
+The output uses CF-1.11 metadata conventions.
+"""
 function BloomEvents.write_category_stack_netcdf(path::AbstractString,
                                                 lat::AbstractVector,
                                                 lon::AbstractVector,
@@ -524,6 +607,36 @@ function BloomEvents.write_category_stack_netcdf(path::AbstractString,
     return path
 end
 
+"""
+    write_peak_category_stack_netcdf(path, lat, lon, peaks; global_attrib=Dict())
+
+Write annual bloom event counts by peak category to a CF-compliant NetCDF file.
+
+The `peaks` argument should contain event-count arrays with dimensions:
+
+    year × latitude × longitude
+
+The following variables are written:
+
+- `events_peak_likely`
+- `events_peak_bloom`
+- `events_peak_intense`
+- `events_peak_extreme`
+- `events_total`
+
+The output file also contains `year`, `latitude`, and `longitude`
+coordinates.
+
+# Arguments
+
+- `path`: output NetCDF file path.
+- `lat`: latitude coordinates.
+- `lon`: longitude coordinates.
+- `peaks`: named tuple containing peak-category event-count arrays.
+- `global_attrib`: optional dictionary of global NetCDF attributes.
+
+The output uses CF-1.11 metadata conventions.
+"""
 function BloomEvents.write_peak_category_stack_netcdf(path::AbstractString,
                                                      lat::AbstractVector,
                                                      lon::AbstractVector,

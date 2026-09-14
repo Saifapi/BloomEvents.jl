@@ -3,11 +3,21 @@
 """
     annual_summaries(events, metrics) -> Vector{AnnualBloomSummary}
 
-Aggregate event counts and metrics by year.
-Definition used here:
-- An event is assigned to the year of its start_date.
-- total_days is the sum of event durations for events starting in that year.
-(We can later implement overlap-aware totals if needed.)
+Aggregate event counts and metrics by the year in which each event starts.
+
+For each year:
+- `frequency` is the number of events starting in that year.
+- `total_days` is the sum of durations of those events.
+- `mean_duration` is their mean duration.
+- `mean_intensity` is the mean event intensity.
+- `max_intensity` is the maximum event intensity.
+- `cumulative_intensity` is the sum of cumulative event intensities.
+- `mean_rate_onset` is the mean onset rate.
+- `mean_rate_decline` is the mean decline rate.
+
+An event spanning multiple calendar years is assigned entirely to the year
+of its `start_date`. Overlap-aware calendar-year totals are not currently
+used.
 """
 function annual_summaries(events::AbstractVector{BloomEvent},
                           metrics::AbstractVector{BloomEventMetrics})

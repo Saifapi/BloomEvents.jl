@@ -12,9 +12,22 @@ end
 """
     compute_event_metrics(events, chl, clim_at_dates) -> Vector{BloomEventMetrics}
 
-Compute per-event intensity metrics.
-Missing chl or missing intensity values are ignored in mean/max/cumulative calculations.
-If an event has no valid intensity values, metrics are NaN.
+Compute intensity and rate metrics for each detected bloom event.
+
+Intensity is defined as `chl - climatology_at_date`.
+
+For each event, the following metrics are computed:
+- `mean_intensity`: mean valid intensity during the event.
+- `max_intensity`: maximum valid intensity during the event.
+- `cumulative_intensity`: sum of valid intensity values during the event.
+- `rate_onset`: change in intensity from the event start to the peak,
+  divided by the number of days to the peak.
+- `rate_decline`: change in intensity from the event end to the peak,
+  divided by the number of days from the peak to the event end.
+
+Missing chlorophyll or intensity values are ignored in the mean, maximum,
+and cumulative calculations. If an event has no valid intensity values,
+all intensity and rate metrics are `NaN`.
 """
 function compute_event_metrics(events::AbstractVector{BloomEvent},
                                chl::AbstractVector,

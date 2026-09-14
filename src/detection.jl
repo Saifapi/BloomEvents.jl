@@ -35,14 +35,24 @@ function label_days(chl::AbstractVector, thr::BloomThresholds)
 end
 
 """
-    fit_bloom(dates, chl; min_duration=3) -> BloomResult
+    fit_bloom(dates, chl; min_duration=3, baseline_years=nothing) -> BloomResult
 
-Raulo et al.-style workflow:
-1) 365-day climatology mean
-2) positive anomalies: chl > climatology
-3) persistence filter (default 3 days)
-4) thresholds (Q25/Q50/Q75/Q90) computed from the persistent positive-anomaly subset
-5) label all days into bloom categories using thresholds
+Fit the chlorophyll-a bloom classification workflow.
+
+The workflow is:
+
+1. Compute a 365-day climatological mean.
+2. Identify positive anomalies where `chl > climatology`.
+3. Apply a persistence filter to retain runs of at least `min_duration` days.
+4. Compute Q25, Q50, Q75, and Q90 thresholds from the persistent
+   positive-anomaly subset.
+5. Classify all observations into bloom categories using those thresholds.
+
+If `baseline_years` is provided, only observations from those years are used
+to compute the climatology.
+
+Returns a `BloomResult` containing the climatology, anomaly masks,
+percentile thresholds, and daily bloom categories.
 """
 function fit_bloom(dates::AbstractVector{Date},
                    chl::AbstractVector;
@@ -175,9 +185,21 @@ end
 """
     analyze_bloom(dates, chl; options=BloomOptions()) -> BloomAnalysis
 
-Convenience function that runs the full workflow:
-- thresholds + labels (fit_bloom)
-- event segmentation (detect_events)
+Run the complete bloom detection and event analysis workflow.
+
+The workflow:
+
+1. Optionally validate that `dates` are daily according to `options`.
+2. Compute climatology, persistence-filtered positive anomalies,
+   percentile thresholds, and daily bloom categories using `fit_bloom`.
+3. Segment bloom-category days into events using `detect_events`.
+
+The `BloomOptions` object controls the persistence duration, minimum event
+category, optional gap bridging, date checking, strict daily checking,
+and climatology baseline years.
+
+Returns a `BloomAnalysis` containing the day-level `BloomResult`, detected
+`BloomEvent` objects, and the options used for the analysis.
 """
 function analyze_bloom(dates::AbstractVector{Date},
                        chl::AbstractVector;

@@ -1,24 +1,33 @@
 ﻿# Spatial category day-count stacks (year × lat × lon)
 
 """
-    category_day_stack(dates, chl3d, years; bloom_options=BloomOptions(), grid_options=GridOptions())
+    category_day_stack(dates, chl3d, years;
+                       bloom_options=BloomOptions(),
+                       grid_options=GridOptions())
 
-Compute day counts in each bloom category for each pixel and year.
+Compute the number of days in each bloom category for every spatial grid
+cell and requested year.
 
-- chl3d must be shaped: chl3d[time, lat, lon]
-- Categories counted: Likely, Bloom, Intense, Extreme
-- NoBloom days are not returned (can be derived if needed)
+The input `chl3d` must have dimensions:
 
-Returns a NamedTuple with:
-- years::Vector{Int}
-- days_likely::Array{Float64,3}  (year, lat, lon)
-- days_bloom::Array{Float64,3}
-- days_intense::Array{Float64,3}
-- days_extreme::Array{Float64,3}
+    chl3d[time, lat, lon]
 
-NaN policy:
-- If pixel not computable (insufficient valid data or threshold failure): NaN
-- If computable: initialize to 0 for all requested years
+The returned `NamedTuple` contains:
+- `years`: requested years.
+- `days_likely`: days classified as `Likely`.
+- `days_bloom`: days classified as `Bloom`.
+- `days_intense`: days classified as `Intense`.
+- `days_extreme`: days classified as `Extreme`.
+
+All category arrays have dimensions `year × lat × lon`.
+`NoBloom` days are not returned.
+
+Cells that do not satisfy the validity requirements remain `NaN`.
+Computable cells are initialized to zero for requested years with no
+days in a particular category.
+
+The bloom classification uses the climatology and percentile thresholds
+defined by `BloomOptions`, including `baseline_years` when provided.
 """
 function category_day_stack(dates::AbstractVector{Date},
                             chl3d::AbstractArray,
@@ -61,13 +70,14 @@ function category_day_stack(dates::AbstractVector{Date},
         for t in 1:nt
             valid += ismissing(ts[t]) ? 0 : 1
         end
-        if valid / nt < grid_options.min_valid_fraction
+        if (grid_options.min_valid_points > 0 && valid < grid_options.min_valid_points) ||
+            (valid / nt < grid_options.min_valid_fraction)
             continue
         end
 
         # We only need thresholds + labels, so fit_bloom is enough
         res = try
-            fit_bloom(dates, ts; min_duration=bloom_options.min_duration)
+            fit_bloom(dates,ts; min_duration=bloom_options.min_duration, baseline_years=bloom_options.baseline_years)
         catch
             continue
         end
