@@ -27,5 +27,7 @@ makedocs(
     ],
 )
 
-# Enable this later when you publish to GitHub Pages:
-deploydocs(repo = "github.com/Saifapi/BloomEvents.jl.git")
+deploydocs(
+    repo = "github.com/Saifapi/BloomEvents.jl.git",
+    devbranch = "main",
+)

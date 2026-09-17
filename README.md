@@ -1,6 +1,6 @@
 ﻿# BloomEvents.jl
 
-[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://saifapi.github.io/BloomEvents.jl/)
+[![Documentation](https://img.shields.io/badge/docs-stable-blue.svg)](https://saifapi.github.io/BloomEvents.jl/stable/)
 
 **BloomEvents.jl** is a Julia package for detecting and analyzing phytoplankton bloom conditions from chlorophyll-a time series and gridded ocean-colour products using a percentile-threshold approach.
 
@@ -41,7 +41,7 @@ The percentile thresholds are used to classify daily conditions into four catego
 
 Bloom events are identified using a persistence criterion. The example workflows use a **3-day minimum duration**, allowing short-lived chlorophyll-a excursions to be distinguished from persistent bloom conditions.
 
-For the scientific background and detailed methodology, see the [theory documentation](https://saifapi.github.io/BloomEvents.jl/theory/).
+For the scientific background and detailed methodology, see the [theory documentation](https://saifapi.github.io/BloomEvents.jl/stable/theory/).
 
 ## Installation
 
@@ -199,7 +199,7 @@ The `examples/` directory contains workflows covering:
 * Persistence-rule validation
 * NetCDF-based spatial processing
 
-See the [Examples documentation](https://saifapi.github.io/BloomEvents.jl/examples/).
+See the [Examples documentation](https://saifapi.github.io/BloomEvents.jl/stable/examples/).
 
 ## Optional dependencies
 
@@ -229,13 +229,13 @@ These packages are not required for the core time-series analysis functionality.
 
 Full documentation is available at:
 
-https://saifapi.github.io/BloomEvents.jl/
+[https://saifapi.github.io/BloomEvents.jl/stable/](https://saifapi.github.io/BloomEvents.jl/stable/)
 
 The documentation includes:
 
-* [Theory](https://saifapi.github.io/BloomEvents.jl/theory/)
-* [API reference](https://saifapi.github.io/BloomEvents.jl/api/)
-* [Examples](https://saifapi.github.io/BloomEvents.jl/examples/)
+* [Theory](https://saifapi.github.io/BloomEvents.jl/stable/theory/)
+* [API reference](https://saifapi.github.io/BloomEvents.jl/stable/api/)
+* [Examples](https://saifapi.github.io/BloomEvents.jl/stable/examples/)
 
 ## Scientific reference
 
