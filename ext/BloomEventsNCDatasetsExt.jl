@@ -312,9 +312,21 @@ function BloomEvents.load_chl_cube_netcdf(filepaths::AbstractVector{<:AbstractSt
 
         # subset lat/lon indices
         lat_idx = lat_range === nothing ? collect(eachindex(lat_full)) : _select_range_indices(lat_full, lat_range)
-        lon_idx, lon_sub = lon_range === nothing ? (collect(eachindex(lon_full)), lon_full) :
-                             _select_lon_indices(lon_full, lon_range; reorder_lon=reorder_lon,
-                                                 allow_dateline_crossing=allow_dateline_crossing)
+
+        if lon_range === nothing
+            lon_idx = collect(eachindex(lon_full))
+
+            if reorder_lon
+                lon_idx = lon_idx[sortperm(lon_full[lon_idx])]
+            end
+        else
+            lon_idx, _ = _select_lon_indices(
+                lon_full,
+                lon_range;
+                reorder_lon = reorder_lon,
+                allow_dateline_crossing = allow_dateline_crossing
+            )
+        end
 
         lat = lat_full[lat_idx]
         lon = lon_full[lon_idx]
@@ -401,9 +413,21 @@ function BloomEvents.load_chl_cube_netcdf(filepaths::AbstractVector{<:AbstractSt
     lon_full = vec(ds0[xnm][:])
 
     lat_idx = lat_range === nothing ? collect(eachindex(lat_full)) : _select_range_indices(lat_full, lat_range)
-    lon_idx, lon_sub = lon_range === nothing ? (collect(eachindex(lon_full)), lon_full) :
-                         _select_lon_indices(lon_full, lon_range; reorder_lon=reorder_lon,
-                                             allow_dateline_crossing=allow_dateline_crossing)
+
+    if lon_range === nothing
+        lon_idx = collect(eachindex(lon_full))
+
+        if reorder_lon
+            lon_idx = lon_idx[sortperm(lon_full[lon_idx])]
+        end
+    else
+        lon_idx, _ = _select_lon_indices(
+            lon_full,
+            lon_range;
+            reorder_lon = reorder_lon,
+            allow_dateline_crossing = allow_dateline_crossing
+        )
+    end
 
     lat = lat_full[lat_idx]
     lon = lon_full[lon_idx]
