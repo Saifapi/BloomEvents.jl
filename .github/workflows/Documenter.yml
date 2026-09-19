@@ -22,15 +22,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout release source
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.tag || github.ref }}
+          fetch-depth: 0
 
       - name: Set up Julia
         uses: julia-actions/setup-julia@v2
         with:
           version: '1.12'
+
+      - name: Use current documentation deployment script
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git fetch origin main --depth=1
+          git show origin/main:docs/make.jl > docs/make.jl
 
       - name: Instantiate documentation environment
         run: julia --project=docs -e 'using Pkg; Pkg.instantiate()'
@@ -39,7 +46,4 @@ jobs:
         run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_EVENT_NAME: ${{ github.event_name == 'workflow_dispatch' && 'push' || github.event_name }}
-          GITHUB_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', github.event.inputs.tag) || github.ref }}
-          GITHUB_REF_TYPE: ${{ github.event_name == 'workflow_dispatch' && 'tag' || github.ref_type }}
-          GITHUB_REF_NAME: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          BLOOMEVENTS_DOC_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || '' }}

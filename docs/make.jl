@@ -27,7 +27,23 @@ makedocs(
     ],
 )
 
-deploydocs(
-    repo = "github.com/Saifapi/BloomEvents.jl.git",
-    devbranch = "main",
-)
+release_tag = get(ENV, "BLOOMEVENTS_DOC_TAG", "")
+
+if isempty(release_tag)
+    deploydocs(
+        repo = "github.com/Saifapi/BloomEvents.jl.git",
+        devbranch = "main",
+    )
+else
+    deploy_config = Documenter.GitHubActions(
+        "Saifapi/BloomEvents.jl",
+        "push",
+        "refs/tags/$(release_tag)",
+    )
+
+    deploydocs(
+        repo = "github.com/Saifapi/BloomEvents.jl.git",
+        devbranch = "main",
+        deploy_config = deploy_config,
+    )
+end
